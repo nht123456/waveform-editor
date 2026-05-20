@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Unit Tests</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .test-suite { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <h1>Unit Tests</h1>
+  <div id="results"></div>
+  <script type="module">
+    import { Segment } from '../src/models/Segment.js';
+    import { Signal } from '../src/models/Signal.js';
+    import { Project } from '../src/models/Project.js';
+
+    const results = document.getElementById('results');
+    let passCount = 0;
+    let failCount = 0;
+
+    function test(name, fn) {
+      try {
+        fn();
+        passCount++;
+        return true;
+      } catch (e) {
+        failCount++;
+        results.innerHTML += `<div class="fail">FAIL: ${name}<br>${e.message}</div>`;
+        return false;
+      }
+    }
+
+    function expect(actual) {
+      return {
+        toBe(expected) {
+          if (actual !== expected) {
+            throw new Error(`Expected ${expected}, got ${actual}`);
+          }
+        },
+        notToBe(expected) {
+          if (actual === expected) {
+            throw new Error(`Expected not ${expected}`);
+          }
+        },
+        toBeGreaterThan(expected) {
+          if (!(actual > expected)) {
+            throw new Error(`Expected ${actual} to be greater than ${expected}`);
+          }
+        }
+      };
+    }
+
+    // Segment tests
+    const suiteDiv = document.createElement('div');
+    suiteDiv.className = 'test-suite';
+    suiteDiv.innerHTML = '<h3>Segment Tests</h3>';
+    results.appendChild(suiteDiv);
+
+    test('Segment: creates with default values', () => {
+      const s = new Segment();
+      expect(s.startTime).toBe(0);
+      expect(s.endTime).toBe(10);
+      expect(s.value).toBe(0);
+    });
+
+    test('Segment: creates with given values', () => {
+      const s = new Segment({ startTime: 5, endTime: 15, value: 1 });
+      expect(s.startTime).toBe(5);
+      expect(s.endTime).toBe(15);
+      expect(s.value).toBe(1);
+    });
+
+    test('Segment: duration is correct', () => {
+      const s = new Segment({ startTime: 5, endTime: 20 });
+      expect(s.duration).toBe(15);
+    });
+
+    test('Segment: contains works correctly', () => {
+      const s = new Segment({ startTime: 5, endTime: 15 });
+      expect(s.contains(10)).toBe(true);
+      expect(s.contains(5)).toBe(true);
+      expect(s.contains(15)).toBe(false);
+    });
+
+    test('Segment: clone creates independent copy', () => {
+      const s = new Segment({ startTime: 5, endTime: 15, value: 1 });
+      const c = s.clone();
+      expect(c.startTime).toBe(5);
+      expect(c).notToBe(s);
+    });
+
+    test('Segment: toJSON/fromJSON roundtrip', () => {
+      const s = new Segment({ startTime: 5, endTime: 15, value: 'X' });
+      const restored = Segment.fromJSON(s.toJSON());
+      expect(restored.startTime).toBe(5);
+      expect(restored.value).toBe('X');
+    });
+
+    test('Segment: throws error when startTime >= endTime', () => {
+      let error = null;
+      try {
+        new Segment({ startTime: 15, endTime: 5, value: 0 });
+      } catch (e) {
+        error = e;
+      }
+      if (!error || !error.message.includes('startTime')) {
+        throw new Error('Expected validation error for startTime >= endTime');
+      }
+    });
+
+    test('Segment: overlaps() detects overlapping segments', () => {
+      const a = new Segment({ startTime: 0, endTime: 10, value: 0 });
+      const b = new Segment({ startTime: 5, endTime: 15, value: 1 });
+      const c = new Segment({ startTime: 20, endTime: 30, value: 0 });
+      expect(a.overlaps(b)).toBe(true);
+      expect(b.overlaps(a)).toBe(true);
+      expect(a.overlaps(c)).toBe(false);
+      expect(c.overlaps(a)).toBe(false);
+    });
+
+    test('Segment: supports Z value', () => {
+      const s = new Segment({ startTime: 0, endTime: 10, value: 'Z' });
+      expect(s.value).toBe('Z');
+      const restored = Segment.fromJSON(s.toJSON());
+      expect(restored.value).toBe('Z');
+    });
+
+    test('Segment: supports hex string values', () => {
+      const s = new Segment({ startTime: 0, endTime: 10, value: '0x3F' });
+      expect(s.value).toBe('0x3F');
+      const restored = Segment.fromJSON(s.toJSON());
+      expect(restored.value).toBe('0x3F');
+    });
+
+    // Signal tests
+    const signalSuiteDiv = document.createElement('div');
+    signalSuiteDiv.className = 'test-suite';
+    signalSuiteDiv.innerHTML = '<h3>Signal Tests</h3>';
+    results.appendChild(signalSuiteDiv);
+
+    test('Signal: creates with default values', () => {
+      const s = new Signal();
+      expect(s.name).toBe('signal');
+      expect(s.type).toBe('signal');
+      expect(s.segments.length).toBe(0);
+    });
+
+    test('Signal: creates clock signal', () => {
+      const s = new Signal({ name: 'clk', type: 'clock' });
+      s.clockConfig = { period: 20, phase: 0, dutyCycle: 0.5 };
+      s.generateClockSegments(100);
+      expect(s.segments.length).toBeGreaterThan(0);
+    });
+
+    test('Signal: addSegment merges correctly', () => {
+      const s = new Signal({ name: 'test' });
+      s.addSegment({ startTime: 0, endTime: 50, value: 0 });
+      s.addSegment({ startTime: 20, endTime: 40, value: 1 });
+      // 应该被分割成三段: 0-20(0), 20-40(1), 40-50(0)
+      expect(s.segments.length).toBe(3);
+    });
+
+    test('Signal: setValueAt changes value', () => {
+      const s = new Signal({ name: 'test' });
+      s.addSegment({ startTime: 0, endTime: 100, value: 0 });
+      s.setValueAt(20, 60, 1);
+      expect(s.segments.length).toBe(3);
+      expect(s.segments[1].value).toBe(1);
+    });
+
+    test('Signal: toJSON/fromJSON roundtrip', () => {
+      const s = new Signal({ name: 'clk', type: 'clock' });
+      s.clockConfig = { period: 20, phase: 0, dutyCycle: 0.5 };
+      s.generateClockSegments(100);
+      const restored = Signal.fromJSON(s.toJSON());
+      expect(restored.name).toBe('clk');
+      expect(restored.type).toBe('clock');
+      expect(restored.segments.length).toBe(s.segments.length);
+    });
+
+    test('Signal: getValueAt returns correct value', () => {
+      const s = new Signal({ name: 'test' });
+      s.addSegment({ startTime: 0, endTime: 50, value: 0 });
+      s.addSegment({ startTime: 50, endTime: 100, value: 1 });
+      expect(s.getValueAt(25)).toBe(0);
+      expect(s.getValueAt(75)).toBe(1);
+      expect(s.getValueAt(150)).toBe(null);
+    });
+
+    test('Signal: getSegmentIndexAt returns correct index', () => {
+      const s = new Signal({ name: 'test' });
+      s.addSegment({ startTime: 0, endTime: 50, value: 0 });
+      s.addSegment({ startTime: 50, endTime: 100, value: 1 });
+      expect(s.getSegmentIndexAt(25)).toBe(0);
+      expect(s.getSegmentIndexAt(75)).toBe(1);
+      expect(s.getSegmentIndexAt(150)).toBe(-1);
+    });
+
+    test('Signal: clone creates independent copy', () => {
+      const s = new Signal({ name: 'test' });
+      s.addSegment({ startTime: 0, endTime: 50, value: 0 });
+      const cloned = s.clone();
+      expect(cloned.name).toBe('test');
+      expect(cloned.segments.length).toBe(1);
+      expect(cloned.id).toBe(s.id);
+    });
+
+    test('Signal: moveEdge adjusts segment boundaries', () => {
+      const s = new Signal({ name: 'test' });
+      s.addSegment({ startTime: 0, endTime: 50, value: 0 });
+      s.addSegment({ startTime: 50, endTime: 100, value: 1 });
+      s.moveEdge(0, 'end', 60);
+      expect(s.segments[0].endTime).toBe(60);
+      expect(s.segments[1].startTime).toBe(60);
+    });
+
+    // Project tests
+    const projectSuiteDiv = document.createElement('div');
+    projectSuiteDiv.className = 'test-suite';
+    projectSuiteDiv.innerHTML = '<h3>Project Tests</h3>';
+    results.appendChild(projectSuiteDiv);
+
+    test('Project: creates with default values', () => {
+      const p = new Project();
+      expect(p.name).toBe('未命名项目');
+      expect(p.signals.length).toBe(0);
+    });
+
+    test('Project: addSignal works correctly', () => {
+      const p = new Project();
+      const s = new Signal({ name: 'clk' });
+      p.addSignal(s);
+      expect(p.signals.length).toBe(1);
+      expect(p.signals[0].name).toBe('clk');
+    });
+
+    test('Project: removeSignal works correctly', () => {
+      const p = new Project();
+      const s = new Signal({ name: 'clk' });
+      p.addSignal(s);
+      p.removeSignal(s.id);
+      expect(p.signals.length).toBe(0);
+    });
+
+    test('Project: getSignalById finds signal', () => {
+      const p = new Project();
+      const s = new Signal({ name: 'clk' });
+      p.addSignal(s);
+      const found = p.getSignalById(s.id);
+      expect(found.name).toBe('clk');
+    });
+
+    test('Project: toJSON/fromJSON roundtrip', () => {
+      const p = new Project({ name: 'test' });
+      p.addSignal(new Signal({ name: 'clk', type: 'clock' }));
+      p.addSignal(new Signal({ name: 'data' }));
+
+      const restored = Project.fromJSON(p.toJSON());
+      expect(restored.name).toBe('test');
+      expect(restored.signals.length).toBe(2);
+    });
+
+    test('Project: event system works', () => {
+      const p = new Project();
+      let eventFired = false;
+      let eventData = null;
+
+      p.on('change', (data) => {
+        eventFired = true;
+        eventData = data;
+      });
+
+      const s = new Signal({ name: 'clk' });
+      p.addSignal(s);
+
+      if (!eventFired) throw new Error('Event was not fired');
+      if (eventData.type !== 'addSignal') throw new Error('Wrong event type');
+    });
+
+    test('Project: timeToX and xToTime conversions', () => {
+      const p = new Project({ timeAxis: { unit: 'ns', scale: 10, start: 0, end: 100 } });
+      expect(p.timeToX(50)).toBe(500);
+      expect(p.xToTime(250)).toBe(25);
+    });
+
+    test('Project: moveSignal changes order', () => {
+      const p = new Project();
+      const s1 = new Signal({ name: 'sig1' });
+      const s2 = new Signal({ name: 'sig2' });
+      const s3 = new Signal({ name: 'sig3' });
+      p.addSignal(s1);
+      p.addSignal(s2);
+      p.addSignal(s3);
+
+      p.moveSignal(s1.id, 2);
+      expect(p.signals[0].name).toBe('sig2');
+      expect(p.signals[1].name).toBe('sig3');
+      expect(p.signals[2].name).toBe('sig1');
+    });
+
+    // Summary
+    results.innerHTML += `<h2>Results: ${passCount} passed, ${failCount} failed</h2>`;
+  </script>
+</body>
+</html>

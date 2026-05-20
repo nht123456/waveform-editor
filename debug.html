@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Debug Test</title>
+</head>
+<body>
+  <h1>Waveform Editor Debug</h1>
+  <div id="log" style="font-family: monospace; white-space: pre;"></div>
+  <script type="module">
+    const log = document.getElementById('log');
+
+    function addLog(msg) {
+      log.textContent += msg + '\n';
+      console.log(msg);
+    }
+
+    try {
+      addLog('Testing imports...');
+
+      const { Segment } = await import('./src/models/Segment.js');
+      addLog('✓ Segment imported');
+
+      const { Signal } = await import('./src/models/Signal.js');
+      addLog('✓ Signal imported');
+
+      const { Project } = await import('./src/models/Project.js');
+      addLog('✓ Project imported');
+
+      addLog('\nTesting Segment...');
+      const seg = new Segment({ startTime: 0, endTime: 10, value: 1 });
+      addLog(`Segment: start=${seg.startTime}, end=${seg.endTime}, value=${seg.value}`);
+
+      addLog('\nTesting Signal...');
+      const sig = new Signal({ name: 'test', type: 'signal' });
+      sig.addSegment({ startTime: 0, endTime: 50, value: 0 });
+      sig.addSegment({ startTime: 20, endTime: 40, value: 1 });
+      addLog(`Signal: name=${sig.name}, segments=${sig.segments.length}`);
+      sig.segments.forEach((s, i) => {
+        addLog(`  [${i}] ${s.startTime}-${s.endTime} = ${s.value}`);
+      });
+
+      addLog('\nTesting Clock Signal...');
+      const clk = new Signal({ name: 'clk', type: 'clock' });
+      clk.clockConfig = { period: 20, phase: 0, dutyCycle: 0.5 };
+      clk.generateClockSegments(100);
+      addLog(`Clock: segments=${clk.segments.length}`);
+      clk.segments.forEach((s, i) => {
+        addLog(`  [${i}] ${s.startTime}-${s.endTime} = ${s.value}`);
+      });
+
+      addLog('\nTesting Project...');
+      const proj = new Project({ name: 'Test' });
+      proj.addSignal(sig);
+      proj.addSignal(clk);
+      addLog(`Project: signals=${proj.signals.length}`);
+      addLog(`TimeAxis: ${proj.timeAxis.start}-${proj.timeAxis.end} ${proj.timeAxis.unit}`);
+      addLog(`Width: ${proj.getTimeAxisWidth()}px`);
+
+      addLog('\n✅ All tests passed!');
+
+    } catch (e) {
+      addLog(`\n❌ Error: ${e.message}`);
+      addLog(`Stack: ${e.stack}`);
+    }
+  </script>
+</body>
+</html>

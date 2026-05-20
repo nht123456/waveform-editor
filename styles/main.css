@@ -1,0 +1,551 @@
+/* 波形图编辑器全局样式 */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-size: 14px;
+  color: #333;
+  background: #f5f5f5;
+  overflow: hidden;
+}
+
+/* 主布局 */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* 工具栏 */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 12px;
+  border-right: 1px solid #eee;
+}
+
+.toolbar-group:last-child {
+  border-right: none;
+}
+
+.toolbar-btn {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.toolbar-btn:hover {
+  background: #f0f0f0;
+}
+
+.toolbar-btn.active {
+  background: #0078D7;
+  color: #fff;
+  border-color: #0078D7;
+}
+
+/* 图标按钮 */
+.icon-btn {
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn svg {
+  stroke: #333;
+}
+
+.icon-btn:hover svg {
+  stroke: #000;
+}
+
+/* 主内容区 */
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 信号列表面板 */
+.signal-panel {
+  width: 200px;
+  min-width: 100px;
+  max-width: 400px;
+  background: #fff;
+  border-right: none;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* 面板分隔拖拽条 */
+.panel-resizer {
+  width: 5px;
+  cursor: col-resize;
+  background: #e0e0e0;
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.15s;
+}
+
+.panel-resizer:hover,
+.panel-resizer.active {
+  background: #3b82f6;
+}
+
+.signal-panel-header {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  font-weight: 600;
+}
+
+.signal-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px;
+}
+
+.signal-item {
+  display: flex;
+  align-items: center;
+  height: 50px;
+  padding: 0 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 0;
+  box-sizing: border-box;
+  transition: background 0.15s;
+}
+
+.signal-item:hover {
+  background: #f5f5f5;
+}
+
+.signal-item.selected {
+  background: #e6f3ff;
+}
+
+.signal-item.dragging {
+  opacity: 0.4;
+}
+
+.signal-item.drag-over {
+  border-bottom: 2px solid #0078D7;
+}
+
+.signal-item.drag-over-top {
+  border-top: 2px solid #0078D7;
+}
+
+.drag-handle {
+  cursor: grab;
+  color: #bbb;
+  font-size: 14px;
+  margin-right: 6px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.drag-handle:hover {
+  color: #666;
+}
+
+.signal-item.dragging .drag-handle {
+  cursor: grabbing;
+}
+
+.signal-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.signal-item-actions {
+  display: none;
+}
+
+.signal-item:hover .signal-item-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.signal-item-btn {
+  padding: 2px 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.signal-item-btn:hover {
+  opacity: 1;
+}
+
+/* 波形编辑区 */
+.waveform-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.waveform-canvas {
+  flex: 1;
+  overflow: auto;
+  background: #fff;
+}
+
+.waveform-svg {
+  display: block;
+}
+
+/* 属性面板 */
+.property-panel {
+  width: 250px;
+  background: #fff;
+  border-left: 1px solid #ddd;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.property-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.property-panel-title {
+  font-weight: 600;
+}
+
+.property-panel-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #999;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.property-panel-close:hover {
+  color: #333;
+}
+
+.property-group {
+  margin-bottom: 16px;
+}
+
+.property-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.property-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.property-input:focus {
+  outline: none;
+  border-color: #0078D7;
+}
+
+/* 电平选择弹出框 */
+.level-popup {
+  position: absolute;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  padding: 4px;
+  z-index: 100;
+}
+
+.level-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.level-option:hover {
+  background: #f5f5f5;
+}
+
+.level-preview {
+  width: 24px;
+  height: 16px;
+  border: 1px solid #ccc;
+}
+
+.level-popup-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 3px 4px;
+}
+
+.bus-gap-btn {
+  padding: 4px 8px;
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.bus-gap-btn:hover {
+  background: #e0e0e0;
+}
+
+.bus-value {
+  font-family: monospace;
+  font-size: 13px;
+  color: #333;
+}
+
+.bus-input-container {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+}
+
+.bus-input {
+  width: 80px;
+  padding: 4px 8px;
+  font-family: monospace;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.bus-apply-btn {
+  padding: 4px 12px;
+  background: #0078D7;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.bus-apply-btn:hover {
+  background: #005A9E;
+}
+
+.bus-delete-btn {
+  padding: 4px 12px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.bus-delete-btn:hover {
+  background: #c82333;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* 依赖箭头样式 */
+.dependency-arrow {
+  transition: stroke 0.15s, stroke-width 0.15s;
+}
+
+.dependency-arrow:hover {
+  stroke: #005A9E;
+}
+
+.dependency-hit-area {
+  pointer-events: stroke;
+}
+
+.temp-arrow {
+  pointer-events: none;
+}
+
+/* 箭头端点手柄 */
+.arrow-endpoint {
+  transition: fill 0.15s, stroke 0.15s;
+}
+
+.arrow-endpoint:hover {
+  fill: rgba(0, 120, 215, 0.3);
+  stroke: #0078D7;
+  stroke-width: 1;
+}
+
+/* 端点拖拽预览 */
+.arrow-endpoint-preview {
+  pointer-events: none;
+}
+
+/* Sheet 标签栏 */
+.sheet-tabs {
+  display: flex;
+  align-items: center;
+  background: #edeef0;
+  border-top: 1px solid #d4d6da;
+  min-height: 36px;
+  padding: 6px 8px;
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.sheet-tabs-list {
+  display: flex;
+  flex: 1;
+  overflow-x: auto;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+}
+
+.sheet-tabs-list::-webkit-scrollbar {
+  height: 0;
+}
+
+.sheet-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid #c8cad0;
+  border-radius: 6px;
+  white-space: nowrap;
+  color: #555;
+  background: #fafafa;
+  transition: all 0.15s;
+  user-select: none;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.sheet-tab:hover {
+  background: #fff;
+  border-color: #a0a4ac;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.sheet-tab.active {
+  background: #fff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(59,130,246,0.2);
+}
+
+.sheet-tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheet-tab-name-input {
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  width: 90px;
+  outline: none;
+  background: #fff;
+}
+
+.sheet-tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #aaa;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: all 0.15s;
+}
+
+.sheet-tab-close:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+.sheet-tab-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px dashed #b8bcc4;
+  background: transparent;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 6px;
+  line-height: 1;
+  margin-right: 6px;
+  transition: all 0.15s;
+}
+
+.sheet-tab-add:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  border-style: solid;
+  background: #f0f6ff;
+}

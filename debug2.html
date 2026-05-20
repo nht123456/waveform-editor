@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Step-by-step Debug</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .success { color: green; }
+    .error { color: red; }
+    .step { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>Waveform Editor Step-by-step Debug</h1>
+  <div id="log"></div>
+  <script type="module">
+    const log = document.getElementById('log');
+
+    function addStep(name, status, detail = '') {
+      const div = document.createElement('div');
+      div.className = 'step';
+      div.innerHTML = `<span class="${status}">${status === 'success' ? '✓' : '✗'} ${name}</span>${detail ? '<br>' + detail : ''}`;
+      log.appendChild(div);
+    }
+
+    async function test() {
+      try {
+        // Step 1: Import colors
+        addStep('Import colors.js', 'running');
+        const colorsModule = await import('./src/config/colors.js');
+        addStep('Import colors.js', 'success', `COLORS.normal = ${colorsModule.COLORS.normal}`);
+
+        // Step 2: Import Segment
+        addStep('Import Segment.js', 'running');
+        const segmentModule = await import('./src/models/Segment.js');
+        const seg = new segmentModule.Segment({ startTime: 0, endTime: 10, value: 1 });
+        addStep('Import Segment.js', 'success', `Created segment: ${seg.startTime}-${seg.endTime}`);
+
+        // Step 3: Import Signal
+        addStep('Import Signal.js', 'running');
+        const signalModule = await import('./src/models/Signal.js');
+        const sig = new signalModule.Signal({ name: 'test' });
+        sig.addSegment({ startTime: 0, endTime: 50, value: 0 });
+        addStep('Import Signal.js', 'success', `Created signal with ${sig.segments.length} segment(s)`);
+
+        // Step 4: Import Project
+        addStep('Import Project.js', 'running');
+        const projectModule = await import('./src/models/Project.js');
+        const proj = new projectModule.Project({ name: 'Test' });
+        addStep('Import Project.js', 'success', `Created project: ${proj.name}`);
+
+        // Step 5: Import StorageManager
+        addStep('Import StorageManager.js', 'running');
+        const storageModule = await import('./src/io/StorageManager.js');
+        const storage = new storageModule.StorageManager();
+        addStep('Import StorageManager.js', 'success');
+
+        // Step 6: Import HistoryController
+        addStep('Import HistoryController.js', 'running');
+        const historyModule = await import('./src/controllers/HistoryController.js');
+        const history = new historyModule.HistoryController(proj);
+        addStep('Import HistoryController.js', 'success');
+
+        // Step 7: Import SVGRenderer
+        addStep('Import SVGRenderer.js', 'running');
+        const svgRendererModule = await import('./src/renderers/SVGRenderer.js');
+        addStep('Import SVGRenderer.js', 'success');
+
+        // Step 8: Import InteractionController
+        addStep('Import InteractionController.js', 'running');
+        const interactionModule = await import('./src/controllers/InteractionController.js');
+        addStep('Import InteractionController.js', 'success');
+
+        // Step 9: Import UI components
+        addStep('Import UI components', 'running');
+        const toolbarModule = await import('./src/ui/Toolbar.js');
+        const signalPanelModule = await import('./src/ui/SignalPanel.js');
+        const propertyPanelModule = await import('./src/ui/PropertyPanel.js');
+        addStep('Import UI components', 'success');
+
+        // Step 10: Import Exporter
+        addStep('Import Exporter.js', 'running');
+        const exporterModule = await import('./src/io/Exporter.js');
+        addStep('Import Exporter.js', 'success');
+
+        // Step 11: Test DOM elements
+        addStep('Check DOM elements', 'running');
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.id = 'testSvg';
+        document.body.appendChild(svg);
+        addStep('Check DOM elements', 'success', 'Created test SVG element');
+
+        // Step 12: Create renderer
+        addStep('Create SVGRenderer', 'running');
+        const renderer = new svgRendererModule.SVGRenderer(svg, proj);
+        addStep('Create SVGRenderer', 'success');
+
+        // Step 13: Add signal and render
+        addStep('Add signal and render', 'running');
+        const testSig = new signalModule.Signal({ name: 'test_signal', type: 'signal' });
+        testSig.addSegment({ startTime: 0, endTime: 100, value: 0 });
+        proj.addSignal(testSig);
+        renderer.render();
+        addStep('Add signal and render', 'success', `Signal count: ${proj.signals.length}`);
+
+        // Step 14: Add clock
+        addStep('Add clock signal', 'running');
+        const clk = new signalModule.Signal({ name: 'clk', type: 'clock' });
+        clk.clockConfig = { period: 20, phase: 0, dutyCycle: 0.5 };
+        clk.generateClockSegments(100);
+        proj.addSignal(clk);
+        renderer.render();
+        addStep('Add clock signal', 'success', `Clock segments: ${clk.segments.length}`);
+
+        addStep('All tests passed!', 'success');
+
+      } catch (e) {
+        addStep('Error', 'error', `${e.message}\n\nStack: ${e.stack}`);
+      }
+    }
+
+    test();
+  </script>
+</body>
+</html>
