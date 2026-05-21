@@ -87,9 +87,10 @@ export class SignalRenderer {
     name.textContent = signal.name;
     signalGroup.appendChild(name);
 
-    // 波形线组（用 mask 裁剪分隔符区域）
+    // 波形线组（用 mask 裁剪分隔符区域，另加 waveform-area-clip 防止超出 0ns 左边界）
     const waveformLinesGroup = this.renderer.createElement('g', {
-      class: 'waveform-lines'
+      class: 'waveform-lines',
+      'clip-path': 'url(#waveform-area-clip)'
     });
     signalGroup.appendChild(waveformLinesGroup);
 

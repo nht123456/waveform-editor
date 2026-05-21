@@ -338,6 +338,22 @@ export class SVGRenderer {
     rect.setAttribute('width', leftMargin + width);
     rect.setAttribute('height', height);
 
+    // 第二个 clipPath：仅覆盖时间轴区域 [0, width]，用于裁剪波形线超出 0ns 左边界
+    let waveAreaClip = this.defs.querySelector('#waveform-area-clip');
+    if (!waveAreaClip) {
+      waveAreaClip = document.createElementNS(this.ns, 'clipPath');
+      waveAreaClip.setAttribute('id', 'waveform-area-clip');
+      const r = document.createElementNS(this.ns, 'rect');
+      r.setAttribute('id', 'waveform-area-clip-rect');
+      waveAreaClip.appendChild(r);
+      this.defs.appendChild(waveAreaClip);
+    }
+    const areaRect = waveAreaClip.querySelector('#waveform-area-clip-rect');
+    areaRect.setAttribute('x', '0');
+    areaRect.setAttribute('y', '0');
+    areaRect.setAttribute('width', width);
+    areaRect.setAttribute('height', height);
+
     // 对信号组和箭头组应用裁剪
     this.signalGroup.setAttribute('clip-path', 'url(#waveform-clip)');
     this.dependencyGroup.setAttribute('clip-path', 'url(#waveform-clip)');
