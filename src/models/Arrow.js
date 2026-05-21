@@ -15,6 +15,12 @@ export class Arrow {
     this.direction = options.direction || 'auto';
     this.isBidirectional = options.isBidirectional ?? false;
 
+    // 曲线类型：curved(弧线) | straight(直线)
+    this.curveType = options.curveType || 'curved';
+
+    // 弧线曲率：1.0 为默认，范围 0.2~3.0
+    this.curvature = options.curvature ?? 1.0;
+
     // 文字标注：支持多个标签
     if (options.labels && options.labels.length > 0) {
       this.labels = options.labels.map(l => ({
@@ -103,6 +109,8 @@ export class Arrow {
       controlPointOffset: this.controlPointOffset,
       direction: this.direction,
       isBidirectional: this.isBidirectional,
+      curveType: this.curveType,
+      curvature: this.curvature,
       labels: this.labels,
       style: this.style
     };

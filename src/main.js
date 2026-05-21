@@ -4,14 +4,14 @@
 import { COLORS, RENDER_CONFIG } from './config/colors.js?v=21';
 import { Project } from './models/Project.js?v=20';
 import { Signal } from './models/Signal.js?v=22';
-import { SVGRenderer } from './renderers/SVGRenderer.js?v=42';
+import { SVGRenderer } from './renderers/SVGRenderer.js?v=44';
 import { SignalRenderer } from './renderers/SignalRenderer.js?v=63';
 import { TimeAxisRenderer } from './renderers/TimeAxisRenderer.js?v=18';
-import { InteractionController } from './controllers/InteractionController.js?v=71';
+import { InteractionController } from './controllers/InteractionController.js?v=73';
 import { HistoryController } from './controllers/HistoryController.js?v=17';
 import { Toolbar } from './ui/Toolbar.js?v=17';
 import { SignalPanel } from './ui/SignalPanel.js?v=22';
-import { PropertyPanel } from './ui/PropertyPanel.js?v=46';
+import { PropertyPanel } from './ui/PropertyPanel.js?v=48';
 import { StorageManager } from './io/StorageManager.js?v=20';
 import { Exporter } from './io/Exporter.js?v=28';
 

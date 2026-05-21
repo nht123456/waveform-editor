@@ -5,7 +5,7 @@
 import { COLORS, RENDER_CONFIG, ARROW_CONFIG } from '../config/colors.js?v=22';
 import { SignalRenderer } from './SignalRenderer.js?v=56';
 import { TimeAxisRenderer } from './TimeAxisRenderer.js?v=19';
-import { DependencyRenderer } from './DependencyRenderer.js?v=24';
+import { DependencyRenderer } from './DependencyRenderer.js?v=26';
 
 export class SVGRenderer {
   /**

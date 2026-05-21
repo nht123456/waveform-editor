@@ -1,7 +1,7 @@
 import { COLORS } from '../config/colors.js?v=21';
 import { Signal } from '../models/Signal.js?v=22';
 import { Segment } from '../models/Segment.js?v=19';
-import { Arrow } from '../models/Arrow.js?v=20';
+import { Arrow } from '../models/Arrow.js?v=21';
 
 export class InteractionController {
   constructor(project, renderer, history, editor) {
@@ -1000,7 +1000,10 @@ export class InteractionController {
           </div>
           <div style="display: flex; gap: 4px;">
             <button class="bus-apply-btn" style="flex: 1;">确定</button>
-            <button class="bus-delete-btn">删除</button>
+            <button class="bus-delete-btn">清空内容</button>
+            <button class="bus-delete-seg-btn">删除段</button>
+          </div>
+          <div style="display: flex; gap: 4px;">
             <button class="bus-gap-btn" title="添加分隔符" style="font-size: 12px;">⫽ 分隔符</button>
             <button class="bus-x-btn" title="设为不定态" style="padding: 2px 8px; font-size: 12px; font-weight: bold; border: 1px solid #E00000; border-radius: 3px; background: #fff; cursor: pointer; color: #E00000;">X态</button>
           </div>
@@ -1087,8 +1090,50 @@ export class InteractionController {
         this._hideLevelPopup();
       };
 
+      const deleteSegAndMerge = () => {
+        const seg = signal.segments.find(s => s.contains((startTime + endTime) / 2));
+        if (!seg) { this._hideLevelPopup(); return; }
+        const oldSegments = signal.segments.map(s => s.toJSON());
+        const segIdx = signal.segments.indexOf(seg);
+        signal.segments.splice(segIdx, 1);
+        // 前一段延伸到被删段的 endTime
+        if (segIdx > 0) {
+          signal.segments[segIdx - 1].endTime = seg.endTime;
+        } else if (signal.segments.length > 0) {
+          // 无前一段，后一段前移
+          signal.segments[0].startTime = seg.startTime;
+        }
+        signal._mergeAdjacentSegments();
+        this.history.execute({
+          type: 'deleteSegment',
+          undo: () => {
+            const sig = this.project.getSignalById(signalId);
+            if (sig) sig.segments = oldSegments.map(s => Segment.fromJSON(s));
+          },
+          redo: () => {
+            const sig = this.project.getSignalById(signalId);
+            if (!sig) return;
+            const s = sig.segments.find(s => s.startTime === seg.startTime && s.endTime === seg.endTime);
+            if (s) {
+              const idx = sig.segments.indexOf(s);
+              sig.segments.splice(idx, 1);
+              if (idx > 0) sig.segments[idx - 1].endTime = seg.endTime;
+              else if (sig.segments.length > 0) sig.segments[0].startTime = seg.startTime;
+              sig._mergeAdjacentSegments();
+            }
+          }
+        });
+        this.project.emit('change', { type: 'deleteSegment', signalId });
+        this._hideLevelPopup();
+        this.renderer.render();
+        this.editor.signalPanel.render();
+      };
+
       btn.addEventListener('click', applyBusValue);
       deleteBtn.addEventListener('click', deleteBusValue);
+
+      const deleteSegBtn = popup.querySelector('.bus-delete-seg-btn');
+      if (deleteSegBtn) deleteSegBtn.addEventListener('click', deleteSegAndMerge);
 
       const gapBtn = popup.querySelector('.bus-gap-btn');
       if (gapBtn) {

@@ -3,7 +3,7 @@
  * 表示一个波形图项目
  */
 import { Signal } from './Signal.js?v=21';
-import { Arrow } from './Arrow.js?v=16';
+import { Arrow } from './Arrow.js?v=21';
 
 export class Project {
   /**

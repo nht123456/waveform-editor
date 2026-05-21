@@ -126,7 +126,7 @@ export class DependencyRenderer {
       markerEnd = 'url(#arrowhead-dependency-reverse)';
     }
 
-    const { cp1, cp2 } = this._calculateControlPoints(startX, startY, endX, endY, fromOffset);
+    const { cp1, cp2 } = this._calculateControlPoints(startX, startY, endX, endY, fromOffset, arrow.curveType, arrow.curvature);
 
     // 透明命中区域（便于选择）
     const hitPath = this.renderer.createElement('path', {
@@ -274,21 +274,29 @@ export class DependencyRenderer {
    * @param {number} [verticalOffset=0] - 垂直偏移（同起点多箭头防重叠）
    * @returns {{cp1: {x: number, y: number}, cp2: {x: number, y: number}}}
    */
-  _calculateControlPoints(x1, y1, x2, y2, verticalOffset = 0) {
+  _calculateControlPoints(x1, y1, x2, y2, verticalOffset = 0, curveType = 'curved', curvature = 1.0) {
     const dx = Math.abs(x2 - x1);
     const direction = x2 >= x1 ? 1 : -1;
 
-    // 同信号箭头（startY ≈ endY）：向上拱起弧线
+    // 直线模式：控制点落在起终点连线上，贝塞尔曲线等价于直线
+    if (curveType === 'straight') {
+      return {
+        cp1: { x: x1 + (x2 - x1) * 0.33, y: y1 + (y2 - y1) * 0.33 },
+        cp2: { x: x1 + (x2 - x1) * 0.67, y: y1 + (y2 - y1) * 0.67 }
+      };
+    }
+
+    // 同信号箭头（startY ≈ endY）：向上拱起弧线，曲率缩放 arcHeight
     if (Math.abs(y2 - y1) < 5) {
-      const arcHeight = Math.max(35, Math.min(dx * 0.35, 80));
+      const arcHeight = Math.max(35, Math.min(dx * 0.35, 80)) * curvature;
       return {
         cp1: { x: x1 + dx * 0.3 * direction, y: y1 - arcHeight },
         cp2: { x: x2 - dx * 0.3 * direction, y: y2 - arcHeight }
       };
     }
 
-    // 跨信号箭头：水平方向更舒展，垂直方向更扁平
-    const controlOffset = Math.min(dx * 0.7, 200);
+    // 跨信号箭头：曲率缩放 controlOffset
+    const controlOffset = Math.min(dx * 0.7, 200) * curvature;
     return {
       cp1: { x: x1 + controlOffset * direction, y: y1 + verticalOffset },
       cp2: { x: x2 - controlOffset * direction, y: y2 + verticalOffset }

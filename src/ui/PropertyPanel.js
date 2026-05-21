@@ -324,6 +324,20 @@ export class PropertyPanel {
       </div>
 
       <div class="property-group">
+        <div class="property-label">曲线类型</div>
+        <select class="property-input" id="arrow-curve-type">
+          <option value="curved" ${arrow.curveType === 'curved' || !arrow.curveType ? 'selected' : ''}>弧线</option>
+          <option value="straight" ${arrow.curveType === 'straight' ? 'selected' : ''}>直线</option>
+        </select>
+      </div>
+
+      <div class="property-group" id="arrow-curvature-group" style="${arrow.curveType === 'straight' ? 'display:none' : ''}">
+        <div class="property-label">曲率 <span id="arrow-curvature-val">${(arrow.curvature ?? 1.0).toFixed(1)}</span></div>
+        <input type="range" id="arrow-curvature" min="0.2" max="3" step="0.1" value="${arrow.curvature ?? 1.0}"
+               style="width: 100%; cursor: pointer;">
+      </div>
+
+      <div class="property-group">
         <div class="property-label">文字标注</div>
         ${arrow.labels.map((label, i) => `
           <div class="arrow-label-row" style="display: flex; gap: 4px; align-items: center; margin-bottom: 4px;">
@@ -384,6 +398,22 @@ export class PropertyPanel {
       arrow.style.dashArray = e.target.value;
       this.editor.project.emit('change');
       this.editor.render();
+    });
+
+    document.getElementById('arrow-curve-type').addEventListener('change', (e) => {
+      arrow.curveType = e.target.value;
+      // 切换曲线/直线时显示/隐藏曲率滑块
+      const curvatureGroup = document.getElementById('arrow-curvature-group');
+      if (curvatureGroup) curvatureGroup.style.display = e.target.value === 'straight' ? 'none' : '';
+      this.editor.project.emit('change');
+      this.editor.render();
+    });
+
+    document.getElementById('arrow-curvature')?.addEventListener('input', (e) => {
+      arrow.curvature = parseFloat(e.target.value);
+      document.getElementById('arrow-curvature-val').textContent = arrow.curvature.toFixed(1);
+      this.editor.project.emit('change');
+      this.editor.renderer.render();
     });
 
     // 绑定标注文字事件

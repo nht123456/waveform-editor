@@ -366,7 +366,8 @@ body {
   background: #005A9E;
 }
 
-.bus-delete-btn {
+.bus-delete-btn,
+.bus-delete-seg-btn {
   padding: 4px 12px;
   background: #dc3545;
   color: white;
@@ -376,7 +377,8 @@ body {
   font-size: 12px;
 }
 
-.bus-delete-btn:hover {
+.bus-delete-btn:hover,
+.bus-delete-seg-btn:hover {
   background: #c82333;
 }
 
