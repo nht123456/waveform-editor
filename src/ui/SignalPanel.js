@@ -45,8 +45,16 @@ export class SignalPanel {
   render() {
     const signals = this.editor.project.signals;
 
-    this.element.innerHTML = signals.map((signal, index) => {
+    const PRESET_COLORS = ['#000000', '#2196F3', '#4CAF50', '#F44336', '#FF9800', '#9C27B0', '#607D8B'];
+    this.element.innerHTML = signals.map((signal) => {
       const isSelected = signal.id === this.editor.selectedSignalId;
+      const signalColor = signal.color || '#0078D7';
+      const colorSwatches = PRESET_COLORS.map(c => {
+        const isActive = c.toLowerCase() === signalColor.toLowerCase();
+        return '<span class="signal-color-preset" data-color="' + c + '" data-sid="' + signal.id + '"' +
+          ' style="display:inline-block;width:12px;height:12px;border-radius:2px;background:' + c + ';cursor:pointer;margin:0 1px;flex-shrink:0;' +
+          'border:2px solid ' + (isActive ? 'rgba(0,0,0,0.55)' : 'transparent') + ';" title="' + c + '"></span>';
+      }).join('');
       return `
         <div class="signal-item ${isSelected ? 'selected' : ''}"
              data-signal-id="${signal.id}"
@@ -54,6 +62,7 @@ export class SignalPanel {
           <span class="drag-handle" title="拖拽排序">⠿</span>
           <span class="signal-item-name">${signal.name}</span>
           <div class="signal-item-actions">
+            <div class="signal-color-swatches" style="display:flex;align-items:center;margin-right:4px;">${colorSwatches}</div>
             <button class="signal-item-btn" data-action="delete" title="删除">🗑️</button>
           </div>
         </div>
@@ -69,19 +78,32 @@ export class SignalPanel {
   _setupClickHandlers() {
     this.element.querySelectorAll('.signal-item').forEach(item => {
       item.addEventListener('click', (e) => {
-        if (e.target.closest('.signal-item-btn') || e.target.closest('.drag-handle')) return;
+        if (e.target.closest('.signal-item-btn') || e.target.closest('.drag-handle') || e.target.closest('.signal-color-swatches')) return;
         this.editor.selectSignal(item.dataset.signalId);
+      });
+    });
+
+    // 颜色预设色块点击
+    this.element.querySelectorAll('.signal-color-preset').forEach(swatch => {
+      swatch.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const color = swatch.dataset.color;
+        const sid = swatch.dataset.sid;
+        const sig = this.editor.project.getSignalById(sid);
+        if (sig) {
+          sig.color = color;
+          this.editor.renderer.render();
+          this.editor.project.emit('change');
+          this.render(); // 更新选中状态
+        }
       });
     });
 
     this.element.querySelectorAll('[data-action="delete"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const signalId = e.target.closest('.signal-item').dataset.signalId;
-        this.editor.project.removeSignal(signalId);
-        if (this.editor.selectedSignalId === signalId) {
-          this.editor.selectedSignalId = null;
-        }
-        this.editor.render();
+        this.editor.deleteSignal(signalId);
       });
     });
   }

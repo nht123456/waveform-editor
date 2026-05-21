@@ -3,15 +3,15 @@
  */
 import { COLORS, RENDER_CONFIG } from './config/colors.js?v=21';
 import { Project } from './models/Project.js?v=20';
-import { Signal } from './models/Signal.js?v=21';
+import { Signal } from './models/Signal.js?v=22';
 import { SVGRenderer } from './renderers/SVGRenderer.js?v=40';
-import { SignalRenderer } from './renderers/SignalRenderer.js?v=56';
+import { SignalRenderer } from './renderers/SignalRenderer.js?v=62';
 import { TimeAxisRenderer } from './renderers/TimeAxisRenderer.js?v=18';
-import { InteractionController } from './controllers/InteractionController.js?v=67';
+import { InteractionController } from './controllers/InteractionController.js?v=69';
 import { HistoryController } from './controllers/HistoryController.js?v=17';
 import { Toolbar } from './ui/Toolbar.js?v=17';
-import { SignalPanel } from './ui/SignalPanel.js?v=21';
-import { PropertyPanel } from './ui/PropertyPanel.js?v=43';
+import { SignalPanel } from './ui/SignalPanel.js?v=22';
+import { PropertyPanel } from './ui/PropertyPanel.js?v=46';
 import { StorageManager } from './io/StorageManager.js?v=20';
 import { Exporter } from './io/Exporter.js?v=28';
 
@@ -198,6 +198,7 @@ class WaveformEditor {
       type: 'clock',
       segments: []
     });
+    clockSignal.color = '#000000';  // 默认黑色
     clockSignal.clockConfig = {
       period: 10,
       phase: 0,
@@ -642,6 +643,7 @@ class WaveformEditor {
         { startTime: 0, endTime: this.project.timeAxis.end, value: 0 }
       ]
     });
+    signal.color = '#000000';  // 默认黑色
 
     if (type === 'clock') {
       signal.clockConfig = {
@@ -652,17 +654,51 @@ class WaveformEditor {
       signal.generateClockSegments(this.project.timeAxis.end);
     }
 
-    // 插入到当前选中信号之后，否则添加到末尾
+    // 确定插入位置：选中信号之后，否则添加到末尾
+    let insertIndex = this.project.signals.length;
     if (this.selectedSignalId) {
       const idx = this.project.getSignalIndex(this.selectedSignalId);
-      if (idx !== -1) {
-        this.project.signals.splice(idx + 1, 0, signal);
+      if (idx !== -1) insertIndex = idx + 1;
+    }
+
+    // 纳入 history 支持撤销
+    this.historyController.execute({
+      type: 'addSignal',
+      redo: () => {
+        this.project.signals.splice(insertIndex, 0, signal);
         this.project.emit('change', { type: 'addSignal', signal });
-      } else {
-        this.project.addSignal(signal);
+      },
+      undo: () => {
+        this.project.signals = this.project.signals.filter(s => s.id !== signal.id);
+        this.project.emit('change');
       }
-    } else {
-      this.project.addSignal(signal);
+    });
+    this.render();
+  }
+
+  /**
+   * 删除信号（纳入 history 支持撤销）
+   */
+  deleteSignal(signalId) {
+    const signal = this.project.getSignalById(signalId);
+    if (!signal) return;
+    const idx = this.project.getSignalIndex(signalId);
+
+    this.historyController.execute({
+      type: 'deleteSignal',
+      undo: () => {
+        this.project.signals.splice(idx, 0, signal);
+        this.project.emit('change');
+      },
+      redo: () => {
+        this.project.signals = this.project.signals.filter(s => s.id !== signalId);
+        this.project.emit('change');
+      }
+    });
+
+    if (this.selectedSignalId === signalId) this.selectedSignalId = null;
+    if (this.interactionController?.selectedSignalId === signalId) {
+      this.interactionController.selectedSignalId = null;
     }
     this.render();
   }

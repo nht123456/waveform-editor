@@ -34,11 +34,17 @@ export class PropertyPanel {
     // 从 interactionController 读取 selectedArrowId
     const selectedArrowId = this.editor.interactionController?.selectedArrowId;
 
+    // 颜色预设（快速选色）—— 与左侧信号列表保持一致的 6 种颜色
+    const PRESET_COLORS = ['#000000', '#2196F3', '#4CAF50', '#F44336', '#FF9800', '#9C27B0', '#607D8B'];
+    const colorPresetsHtml = PRESET_COLORS.map(c =>
+      `<div class="color-preset" data-color="${c}" style="width:20px;height:20px;border-radius:3px;background:${c};cursor:pointer;border:2px solid transparent;flex-shrink:0;" title="${c}"></div>`
+    ).join('');
+
     // 优先显示箭头属性
     if (selectedArrowId) {
       this.panel.style.display = '';
       this._setHeaderTitle('箭头属性');
-      this._renderArrowProperties(selectedArrowId);
+      this._renderArrowProperties(selectedArrowId, colorPresetsHtml);
       return;
     }
 
@@ -81,6 +87,7 @@ export class PropertyPanel {
           <input type="color" id="prop-color" value="${signal.color || '#000000'}" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
           <button class="toolbar-btn" id="prop-color-reset" style="font-size: 11px; padding: 3px 8px;">重置</button>
         </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">${colorPresetsHtml}</div>
       </div>
     `;
 
@@ -98,6 +105,12 @@ export class PropertyPanel {
         <div class="property-group">
           <div class="property-label">占空比</div>
           <input class="property-input" id="prop-duty" type="number" step="0.1" min="0" max="1" value="${config.dutyCycle}">
+        </div>
+        <div class="property-group">
+          <label style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="prop-inverted" ${config.inverted ? 'checked' : ''}>
+            极性翻转（下降沿启动）
+          </label>
         </div>
         <div class="property-group">
           <button class="toolbar-btn" id="prop-regen">重新生成时钟</button>
@@ -169,11 +182,23 @@ export class PropertyPanel {
     });
 
     document.getElementById('prop-color-reset').addEventListener('click', () => {
-      signal.color = null;
+      signal.color = '#000000';
       document.getElementById('prop-color').value = '#000000';
       this.editor.renderer.render();
       this.editor.signalPanel.render();
       this.editor.project.emit('change');
+    });
+
+    // 颜色预设快速选色
+    this.element.querySelectorAll('.color-preset').forEach(swatch => {
+      swatch.addEventListener('click', () => {
+        const color = swatch.dataset.color;
+        signal.color = color;
+        document.getElementById('prop-color').value = color;
+        this.editor.renderer.render();
+        this.editor.signalPanel.render();
+        this.editor.project.emit('change');
+      });
     });
 
     const periodInput = document.getElementById('prop-period');
@@ -198,6 +223,15 @@ export class PropertyPanel {
     }
     if (regenBtn) {
       regenBtn.addEventListener('click', () => {
+        signal.generateClockSegments(project.timeAxis.end);
+        this.editor.render();
+      });
+    }
+
+    const invertedInput = document.getElementById('prop-inverted');
+    if (invertedInput) {
+      invertedInput.addEventListener('change', (e) => {
+        signal.clockConfig.inverted = e.target.checked;
         signal.generateClockSegments(project.timeAxis.end);
         this.editor.render();
       });
@@ -239,7 +273,7 @@ export class PropertyPanel {
   /**
    * 渲染箭头属性编辑 UI
    */
-  _renderArrowProperties(arrowId) {
+  _renderArrowProperties(arrowId, colorPresetsHtml = '') {
     const arrow = this.editor.project.getArrowById(arrowId);
     if (!arrow) {
       this.element.innerHTML = '<p style="color: #999; font-size: 12px;">箭头不存在</p>';
@@ -268,6 +302,7 @@ export class PropertyPanel {
         <div class="property-label">颜色</div>
         <input type="color" class="property-input" id="arrow-color" value="${arrow.style.stroke}"
                style="height: 40px; padding: 2px; width: 100%;">
+        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">${colorPresetsHtml}</div>
       </div>
 
       <div class="property-group">
@@ -326,6 +361,17 @@ export class PropertyPanel {
       arrow.style.stroke = e.target.value;
       this.editor.project.emit('change');
       this.editor.render();
+    });
+
+    // 箭头颜色预设色块
+    this.element.querySelectorAll('.color-preset').forEach(swatch => {
+      swatch.addEventListener('click', () => {
+        const color = swatch.dataset.color;
+        arrow.style.stroke = color;
+        document.getElementById('arrow-color').value = color;
+        this.editor.project.emit('change');
+        this.editor.render();
+      });
     });
 
     document.getElementById('arrow-stroke-width').addEventListener('change', (e) => {

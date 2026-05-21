@@ -19,6 +19,7 @@ export class Signal {
     this.segments = [];
     this.clockConfig = null;
     this.gaps = options.gaps ? options.gaps.map(g => ({ ...g })) : []; // 垂直分隔符 [{id, time}]
+    this.edgeMarkers = options.edgeMarkers ? options.edgeMarkers.map(m => ({ ...m })) : []; // 沿标注 [{id, time, type:'rising'|'falling'}]
 
     // 初始段（非时钟信号）
     if (options.segments) {
@@ -53,6 +54,26 @@ export class Signal {
    */
   removeGap(gapId) {
     this.gaps = this.gaps.filter(g => g.id !== gapId);
+  }
+
+  /**
+   * 添加沿标注
+   * @param {number} time - 跳变沿时间
+   * @param {'rising'|'falling'} type - 沿类型
+   * @returns {Object} 添加的标注
+   */
+  addEdgeMarker(time, type) {
+    const marker = { id: 'em_' + Math.random().toString(36).substr(2, 9), time, type };
+    this.edgeMarkers.push(marker);
+    return marker;
+  }
+
+  /**
+   * 移除沿标注
+   * @param {string} markerId - 标注 ID
+   */
+  removeEdgeMarker(markerId) {
+    this.edgeMarkers = this.edgeMarkers.filter(m => m.id !== markerId);
   }
 
   /**
@@ -226,11 +247,11 @@ export class Signal {
   generateClockSegments(endTime = 100) {
     if (this.type !== 'clock' || !this.clockConfig) return;
 
-    const { period, phase, dutyCycle } = this.clockConfig;
+    const { period, phase, dutyCycle, inverted } = this.clockConfig;
     this.segments = [];
 
     let time = phase;
-    let isHigh = dutyCycle > 0;
+    let isHigh = inverted ? !(dutyCycle > 0) : (dutyCycle > 0);
 
     while (time < endTime) {
       const nextTime = Math.min(
@@ -301,6 +322,7 @@ export class Signal {
     cloned.segments = this.segments.map(s => s.clone());
     cloned.clockConfig = this.clockConfig ? { ...this.clockConfig } : null;
     cloned.gaps = this.gaps.map(g => ({ ...g }));
+    cloned.edgeMarkers = this.edgeMarkers.map(m => ({ ...m }));
 
     return cloned;
   }
@@ -317,7 +339,8 @@ export class Signal {
       color: this.color,
       segments: this.segments.map(s => s.toJSON()),
       clockConfig: this.clockConfig,
-      gaps: this.gaps
+      gaps: this.gaps,
+      edgeMarkers: this.edgeMarkers
     };
   }
 
@@ -337,6 +360,7 @@ export class Signal {
 
     signal.segments = (json.segments || []).map(s => Segment.fromJSON(s));
     signal.clockConfig = json.clockConfig || null;
+    signal.edgeMarkers = (json.edgeMarkers || []).map(m => ({ ...m }));
 
     return signal;
   }

@@ -1,5 +1,5 @@
 import { COLORS } from '../config/colors.js?v=21';
-import { Signal } from '../models/Signal.js?v=21';
+import { Signal } from '../models/Signal.js?v=22';
 import { Segment } from '../models/Segment.js?v=19';
 import { Arrow } from '../models/Arrow.js?v=20';
 
@@ -412,12 +412,23 @@ export class InteractionController {
     if (e.key === 'Delete' && this.selectedGapId) {
       const signal = this.project.getSignalById(this.selectedGapSignalId);
       if (signal) {
-        if (signal.gaps) {
-        signal.gaps = signal.gaps.filter(g => g.id !== this.selectedGapId);
-      }
+        const gapId = this.selectedGapId;
+        const signalId = this.selectedGapSignalId;
+        const oldGaps = (signal.gaps || []).map(g => ({ ...g }));
+        const newGaps = oldGaps.filter(g => g.id !== gapId);
+        this.history.execute({
+          type: 'deleteGap',
+          undo: () => {
+            const s = this.project.getSignalById(signalId);
+            if (s) { s.gaps = oldGaps.map(g => ({ ...g })); this.project.emit('change'); }
+          },
+          redo: () => {
+            const s = this.project.getSignalById(signalId);
+            if (s) { s.gaps = newGaps.map(g => ({ ...g })); this.project.emit('change'); }
+          }
+        });
         this.selectedGapId = null;
         this.selectedGapSignalId = null;
-        this.project.emit('change');
         this.renderer.render();
       }
       return;
@@ -425,9 +436,7 @@ export class InteractionController {
 
     // 删除选中的信号
     if (e.key === 'Delete' && this.selectedSignalId) {
-      this.project.removeSignal(this.selectedSignalId);
-      this.selectedSignalId = null;
-      this.renderer.render();
+      this.editor.deleteSignal(this.selectedSignalId);
     }
   }
 
@@ -749,7 +758,12 @@ export class InteractionController {
       isBidirectional: isSelfConnect
     });
 
-    this.project.addArrow(arrow);
+    // 纳入 history 支持撤销
+    this.history.execute({
+      type: 'addArrow',
+      undo: () => { this.project.removeArrow(arrow.id); },
+      redo: () => { this.project.addArrow(arrow); }
+    });
     this.arrowDragMode = null;
     this.arrowDragState = null;
     this.renderer.render();
@@ -1122,6 +1136,31 @@ export class InteractionController {
         this.editor.signalPanel.render();
       });
       popup.appendChild(gapOption);
+
+      // 沿标注选项（上升沿、下降沿）
+      const edgeDivider = document.createElement('div');
+      edgeDivider.className = 'level-popup-divider';
+      popup.appendChild(edgeDivider);
+
+      const risingOption = document.createElement('div');
+      risingOption.className = 'level-option';
+      risingOption.innerHTML = `<div class="level-preview" style="display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;color:#0078D7;">↑</div><span>上升沿标注</span>`;
+      risingOption.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._applyEdgeMarkers(signalId, startTime, endTime, 'rising');
+        this._hideLevelPopup();
+      });
+      popup.appendChild(risingOption);
+
+      const fallingOption = document.createElement('div');
+      fallingOption.className = 'level-option';
+      fallingOption.innerHTML = `<div class="level-preview" style="display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;color:#0078D7;">↓</div><span>下降沿标注</span>`;
+      fallingOption.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._applyEdgeMarkers(signalId, startTime, endTime, 'falling');
+        this._hideLevelPopup();
+      });
+      popup.appendChild(fallingOption);
     }
 
     document.body.appendChild(popup);
@@ -1148,6 +1187,61 @@ export class InteractionController {
     if (this.levelPopup && !this.levelPopup.contains(e.target)) {
       this._hideLevelPopup();
     }
+  }
+
+  /**
+   * 应用沿标注（在选中时间范围内的指定类型跳变沿上添加/切换箭头标注）
+   * @param {string} signalId
+   * @param {number} startTime
+   * @param {number} endTime
+   * @param {'rising'|'falling'} edgeType
+   */
+  _applyEdgeMarkers(signalId, startTime, endTime, edgeType) {
+    const signal = this.project.getSignalById(signalId);
+    if (!signal) return;
+
+    if (!signal.edgeMarkers) signal.edgeMarkers = [];
+    const oldMarkers = signal.edgeMarkers.map(m => ({ ...m }));
+
+    // 在时间范围内找到所有指定类型的跳变沿，切换标注
+    for (let i = 1; i < signal.segments.length; i++) {
+      const prev = signal.segments[i - 1];
+      const curr = signal.segments[i];
+      const transTime = curr.startTime;
+      if (transTime < startTime || transTime > endTime) continue;
+
+      const isRising = (prev.value === 0 || prev.value === 'Z') && curr.value === 1;
+      const isFalling = prev.value === 1 && (curr.value === 0 || curr.value === 'Z');
+
+      if ((edgeType === 'rising' && isRising) || (edgeType === 'falling' && isFalling)) {
+        const existing = signal.edgeMarkers.find(
+          m => Math.abs(m.time - transTime) < 0.01 && m.type === edgeType
+        );
+        if (existing) {
+          signal.removeEdgeMarker(existing.id); // 已有标注则切换删除
+        } else {
+          signal.addEdgeMarker(transTime, edgeType);
+        }
+      }
+    }
+
+    const newMarkers = signal.edgeMarkers.map(m => ({ ...m }));
+
+    this.history.execute({
+      type: 'edgeMarkers',
+      undo: () => {
+        const s = this.project.getSignalById(signalId);
+        if (s) s.edgeMarkers = oldMarkers.map(m => ({ ...m }));
+      },
+      redo: () => {
+        const s = this.project.getSignalById(signalId);
+        if (s) s.edgeMarkers = newMarkers.map(m => ({ ...m }));
+      }
+    });
+
+    this.project.emit('change');
+    this.renderer.render();
+    this.editor.signalPanel.render();
   }
 
   _applyLevel(signalId, startTime, endTime, value, color = null) {
@@ -1360,10 +1454,15 @@ export class InteractionController {
   _deleteSelectedArrow() {
     const arrow = this.project.getArrowById(this.selectedArrowId);
     if (!arrow) return;
-
-    this.project.removeArrow(this.selectedArrowId);
+    const arrowId = this.selectedArrowId;
+    // 纳入 history 支持撤销
+    this.history.execute({
+      type: 'deleteArrow',
+      undo: () => { this.project.addArrow(arrow); },
+      redo: () => { this.project.removeArrow(arrowId); }
+    });
     this.selectedArrowId = null;
-    this.renderer.render();
+    this.editor.render();
   }
 
   _clearSelection() {

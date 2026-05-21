@@ -140,6 +140,13 @@ export class SignalRenderer {
       this._renderGaps(gapGroup, signal, y);
     }
 
+    // Render edge markers (沿标注箭头)
+    if (signal.edgeMarkers && signal.edgeMarkers.length > 0) {
+      const markersGroup = this.renderer.createElement('g', { class: 'edge-markers' });
+      signalGroup.appendChild(markersGroup);
+      this._renderEdgeMarkers(markersGroup, signal, y);
+    }
+
     group.appendChild(signalGroup);
   }
 
@@ -474,7 +481,88 @@ export class SignalRenderer {
   }
 
   /**
-   * 渲染跳变沿节点（用于拖拽交互）
+   * 渲染跳变沿标注箭头
+   * @param {SVGGElement} group
+   * @param {Signal} signal
+   * @param {number} y
+   */
+  _renderEdgeMarkers(group, signal, y) {
+    const { waveformHeight, waveformTopOffset } = this.config;
+    const highY = y + waveformTopOffset;
+    const lowY = y + waveformTopOffset + waveformHeight;
+    const midY = y + waveformTopOffset + waveformHeight / 2;
+    const color = signal.color || COLORS.normal;
+  
+    // 根据时钟周期像素宽度动态调整箭头大小：周期越密（像素越小）箭头越小
+    let arrowW = 5, arrowH = 6, stemLen = 5;
+    if (signal.type === 'clock' && signal.clockConfig?.period) {
+      const periodPx = Math.abs(this.project.timeToX(signal.clockConfig.period) - this.project.timeToX(0));
+      const halfPx = periodPx / 2;
+      const scale = Math.max(0.35, Math.min(1.0, halfPx / 25));
+      arrowW = Math.max(2, 5 * scale);
+      arrowH = Math.max(2.5, 6 * scale);
+      stemLen = Math.max(2, 5 * scale);
+    }
+    const totalH = arrowH + stemLen;
+  
+    for (const marker of signal.edgeMarkers) {
+      const x = this.project.timeToX(marker.time);
+  
+      if (marker.type === 'rising') {
+        // 上升沿：实心箭头居中在波形垂直中线，指向上
+        const stemBottom = midY + totalH / 2;
+        const headBaseY = stemBottom - stemLen;
+        const tipY = headBaseY - arrowH;
+        // 白色光晓（提高对比度）
+        group.appendChild(this.renderer.createElement('path', {
+          d: `M ${x} ${tipY - 1} L ${x - arrowW - 2} ${headBaseY + 1} L ${x + arrowW + 2} ${headBaseY + 1} Z`,
+          fill: '#fff', stroke: 'none', 'pointer-events': 'none'
+        }));
+        group.appendChild(this.renderer.createElement('line', {
+          x1: x, y1: headBaseY, x2: x, y2: stemBottom + 1,
+          stroke: '#fff', 'stroke-width': '3', 'pointer-events': 'none'
+        }));
+        // 实心三角箭头
+        group.appendChild(this.renderer.createElement('path', {
+          d: `M ${x} ${tipY} L ${x - arrowW} ${headBaseY} L ${x + arrowW} ${headBaseY} Z`,
+          fill: color, stroke: 'none', 'pointer-events': 'none'
+        }));
+        // 箭头茂
+        group.appendChild(this.renderer.createElement('line', {
+          x1: x, y1: headBaseY, x2: x, y2: stemBottom,
+          stroke: color, 'stroke-width': '1.2', 'pointer-events': 'none'
+        }));
+  
+      } else if (marker.type === 'falling') {
+        // 下降沿：实心箭头居中在波形垂直中线，指向下
+        const stemTop = midY - totalH / 2;
+        const headBaseY = stemTop + stemLen;
+        const tipY = headBaseY + arrowH;
+        // 白色光晓
+        group.appendChild(this.renderer.createElement('path', {
+          d: `M ${x} ${tipY + 1} L ${x - arrowW - 2} ${headBaseY - 1} L ${x + arrowW + 2} ${headBaseY - 1} Z`,
+          fill: '#fff', stroke: 'none', 'pointer-events': 'none'
+        }));
+        group.appendChild(this.renderer.createElement('line', {
+          x1: x, y1: headBaseY, x2: x, y2: stemTop - 1,
+          stroke: '#fff', 'stroke-width': '3', 'pointer-events': 'none'
+        }));
+        // 实心三角箭头
+        group.appendChild(this.renderer.createElement('path', {
+          d: `M ${x} ${tipY} L ${x - arrowW} ${headBaseY} L ${x + arrowW} ${headBaseY} Z`,
+          fill: color, stroke: 'none', 'pointer-events': 'none'
+        }));
+        // 箭头茂
+        group.appendChild(this.renderer.createElement('line', {
+          x1: x, y1: headBaseY, x2: x, y2: stemTop,
+          stroke: color, 'stroke-width': '1.2', 'pointer-events': 'none'
+        }));
+      }
+    }
+  }
+  
+  /**
+   * 渲染跨变沿节点（用于拖拽交互）
    */
   _renderEdgeNodes(group, segments, y) {
     const { waveformHeight, waveformTopOffset } = this.config;
