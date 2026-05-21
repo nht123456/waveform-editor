@@ -276,12 +276,19 @@ export class DependencyRenderer {
    */
   _calculateControlPoints(x1, y1, x2, y2, verticalOffset = 0) {
     const dx = Math.abs(x2 - x1);
-    // 水平方向更舒展，垂直方向更扁平
-    const controlOffset = Math.min(dx * 0.7, 200);
-
-    // 根据起点和终点的相对位置确定控制点方向
     const direction = x2 >= x1 ? 1 : -1;
 
+    // 同信号箭头（startY ≈ endY）：向上拱起弧线
+    if (Math.abs(y2 - y1) < 5) {
+      const arcHeight = Math.max(35, Math.min(dx * 0.35, 80));
+      return {
+        cp1: { x: x1 + dx * 0.3 * direction, y: y1 - arcHeight },
+        cp2: { x: x2 - dx * 0.3 * direction, y: y2 - arcHeight }
+      };
+    }
+
+    // 跨信号箭头：水平方向更舒展，垂直方向更扁平
+    const controlOffset = Math.min(dx * 0.7, 200);
     return {
       cp1: { x: x1 + controlOffset * direction, y: y1 + verticalOffset },
       cp2: { x: x2 - controlOffset * direction, y: y2 + verticalOffset }

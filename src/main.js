@@ -4,10 +4,10 @@
 import { COLORS, RENDER_CONFIG } from './config/colors.js?v=21';
 import { Project } from './models/Project.js?v=20';
 import { Signal } from './models/Signal.js?v=22';
-import { SVGRenderer } from './renderers/SVGRenderer.js?v=41';
+import { SVGRenderer } from './renderers/SVGRenderer.js?v=42';
 import { SignalRenderer } from './renderers/SignalRenderer.js?v=63';
 import { TimeAxisRenderer } from './renderers/TimeAxisRenderer.js?v=18';
-import { InteractionController } from './controllers/InteractionController.js?v=70';
+import { InteractionController } from './controllers/InteractionController.js?v=71';
 import { HistoryController } from './controllers/HistoryController.js?v=17';
 import { Toolbar } from './ui/Toolbar.js?v=17';
 import { SignalPanel } from './ui/SignalPanel.js?v=22';

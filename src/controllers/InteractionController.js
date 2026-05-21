@@ -713,10 +713,19 @@ export class InteractionController {
     this.arrowDragState.lastToTime = snappedToTime;
 
     const dx = Math.abs(toX - fromX);
-    const controlOffset = Math.min(dx * 0.5, 150);
     const direction = toX >= fromX ? 1 : -1;
-    const cp1 = { x: fromX + controlOffset * direction, y: fromY };
-    const cp2 = { x: toX - controlOffset * direction, y: toY };
+    let cp1, cp2;
+
+    // 同信号箭头：向上拱起弧线
+    if (Math.abs(toY - fromY) < 5) {
+      const arcHeight = Math.max(35, Math.min(dx * 0.35, 80));
+      cp1 = { x: fromX + dx * 0.3 * direction, y: fromY - arcHeight };
+      cp2 = { x: toX - dx * 0.3 * direction, y: toY - arcHeight };
+    } else {
+      const controlOffset = Math.min(dx * 0.5, 150);
+      cp1 = { x: fromX + controlOffset * direction, y: fromY };
+      cp2 = { x: toX - controlOffset * direction, y: toY };
+    }
 
     const path = this.renderer.createElement('path', {
       class: 'temp-arrow',
