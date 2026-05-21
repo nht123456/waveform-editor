@@ -556,7 +556,7 @@ export class InteractionController {
     this.dragStart = {
       signalIndex,
       signalId: signal.id,
-      startTime: time,
+      startTime: Math.max(this.project.timeAxis.start, Math.min(this.project.timeAxis.end, time)),
       startX: point.x,
       startY: point.y,
       clientX: e.clientX,
@@ -901,6 +901,12 @@ export class InteractionController {
     // 确保时间顺序正确
     let minTime = Math.min(startTime, endTime);
     let maxTime = Math.max(startTime, endTime);
+
+    // 裁剪到时间轴有效范围，防止拖拽越过左边界 0ns 分隔线
+    const axisStart = this.project.timeAxis.start;
+    const axisEnd = this.project.timeAxis.end;
+    minTime = Math.max(minTime, axisStart);
+    maxTime = Math.min(maxTime, axisEnd);
 
     // 单击（没有拖动）
     if (maxTime - minTime < 0.5) {
