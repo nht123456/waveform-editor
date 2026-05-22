@@ -3,7 +3,7 @@
  */
 import { COLORS, RENDER_CONFIG } from './config/colors.js?v=21';
 import { Project } from './models/Project.js?v=20';
-import { Signal } from './models/Signal.js?v=22';
+import { Signal } from './models/Signal.js?v=23';
 import { SVGRenderer } from './renderers/SVGRenderer.js?v=44';
 import { SignalRenderer } from './renderers/SignalRenderer.js?v=63';
 import { TimeAxisRenderer } from './renderers/TimeAxisRenderer.js?v=18';
@@ -627,6 +627,63 @@ class WaveformEditor {
         document.body.style.userSelect = '';
       });
     }
+
+    // 快捷键提示条与帮助弹窗
+    this._initHelpUI();
+  }
+
+  /**
+   * 初始化快捷键提示条和帮助弹窗
+   */
+  _initHelpUI() {
+    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+    const altKeyName = isMac ? 'Option ⌥' : 'Alt';
+    const modKeyName = isMac ? 'Cmd ⌘' : 'Ctrl';
+
+    // OS 适配提示文本
+    const altKeyHint = document.getElementById('altKeyHint');
+    if (altKeyHint) altKeyHint.textContent = altKeyName;
+    document.querySelectorAll('.help-table kbd.alt-key').forEach(el => {
+      el.textContent = altKeyName;
+    });
+    document.querySelectorAll('.help-table kbd.mod-key').forEach(el => {
+      el.textContent = modKeyName;
+    });
+
+    // 提示条显示/关闭
+    const hintBar = document.getElementById('hintBar');
+    const hintCloseBtn = document.getElementById('hintCloseBtn');
+    if (hintBar) {
+      const dismissed = localStorage.getItem('waveform-hint-dismissed') === '1';
+      if (!dismissed) hintBar.style.display = 'flex';
+    }
+    if (hintCloseBtn) {
+      hintCloseBtn.addEventListener('click', () => {
+        hintBar.style.display = 'none';
+        localStorage.setItem('waveform-hint-dismissed', '1');
+      });
+    }
+
+    // 帮助弹窗开关
+    const helpBtn = document.getElementById('helpBtn');
+    const helpModal = document.getElementById('helpModal');
+    const helpModalMask = document.getElementById('helpModalMask');
+    const helpModalClose = document.getElementById('helpModalClose');
+    if (helpBtn && helpModal) {
+      helpBtn.addEventListener('click', () => {
+        helpModal.style.display = 'block';
+      });
+    }
+    const closeHelp = () => {
+      if (helpModal) helpModal.style.display = 'none';
+    };
+    if (helpModalMask) helpModalMask.addEventListener('click', closeHelp);
+    if (helpModalClose) helpModalClose.addEventListener('click', closeHelp);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && helpModal && helpModal.style.display === 'block') {
+        closeHelp();
+      }
+    });
   }
 
   /**

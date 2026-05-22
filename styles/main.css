@@ -216,6 +216,195 @@ body {
   flex: 1;
   overflow: auto;
   background: #fff;
+  position: relative;
+}
+
+/* 快捷键提示条（右下角浮动） */
+.hint-bar {
+  position: absolute;
+  bottom: 16px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 8px 14px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 120, 215, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-size: 12px;
+  color: #333;
+  pointer-events: auto;
+  z-index: 10;
+  transition: opacity 0.3s;
+}
+
+.hint-bar .hint-icon {
+  font-size: 14px;
+}
+
+.hint-bar .hint-text {
+  user-select: none;
+}
+
+.hint-bar kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  margin: 0 2px;
+  background: rgba(0, 120, 215, 0.12);
+  border: 1px solid rgba(0, 120, 215, 0.3);
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 11px;
+  color: #0078D7;
+}
+
+.hint-bar .hint-close {
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: #888;
+  transition: background 0.2s, color 0.2s;
+}
+
+.hint-bar .hint-close:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #333;
+}
+
+/* 快捷键说明弹窗 */
+.help-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.help-modal-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.help-modal-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 460px;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.help-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.help-modal-close {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: #666;
+}
+
+.help-modal-close:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.help-modal-body {
+  padding: 12px 16px 16px;
+  overflow-y: auto;
+}
+
+.help-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.help-table th {
+  text-align: left;
+  padding: 8px 6px 4px;
+  color: #0078D7;
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.help-table td {
+  padding: 6px;
+  vertical-align: middle;
+  color: #444;
+}
+
+.help-table td:first-child {
+  width: 42%;
+  color: #222;
+}
+
+.help-table tr:not(:last-child) td {
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.help-table kbd,
+.help-tip kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  margin: 0 2px;
+  background: #f5f5f5;
+  border: 1px solid #d0d0d0;
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #333;
+  line-height: 1.4;
+}
+
+.help-table kbd.alt-key,
+.help-table kbd.mod-key {
+  background: rgba(0, 120, 215, 0.08);
+  border-color: rgba(0, 120, 215, 0.3);
+  color: #0078D7;
+}
+
+.help-tip {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #614700;
 }
 
 .waveform-svg {

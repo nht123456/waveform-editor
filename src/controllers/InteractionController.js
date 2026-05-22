@@ -1,5 +1,5 @@
 import { COLORS } from '../config/colors.js?v=21';
-import { Signal } from '../models/Signal.js?v=22';
+import { Signal } from '../models/Signal.js?v=23';
 import { Segment } from '../models/Segment.js?v=19';
 import { Arrow } from '../models/Arrow.js?v=21';
 

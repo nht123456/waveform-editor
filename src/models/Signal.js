@@ -253,17 +253,28 @@ export class Signal {
     let time = phase;
     let isHigh = inverted ? !(dutyCycle > 0) : (dutyCycle > 0);
 
+    // 相位为正时向前回溯，保证 [0, phase) 区间也有波形（视觉上整体右移而非左侧空白）
+    while (time > 0) {
+      const prevIsHigh = !isHigh;
+      const prevDuration = prevIsHigh ? period * dutyCycle : period * (1 - dutyCycle);
+      time -= prevDuration;
+      isHigh = prevIsHigh;
+    }
+
     while (time < endTime) {
       const nextTime = Math.min(
         time + (isHigh ? period * dutyCycle : period * (1 - dutyCycle)),
         endTime
       );
 
-      this.segments.push(new Segment({
-        startTime: time,
-        endTime: nextTime,
-        value: isHigh ? 1 : 0
-      }));
+      // 跳过完全在 0 之前的段，跨 0 的段裁剪到从 0 开始
+      if (nextTime > 0) {
+        this.segments.push(new Segment({
+          startTime: Math.max(0, time),
+          endTime: nextTime,
+          value: isHigh ? 1 : 0
+        }));
+      }
 
       time = nextTime;
       isHigh = !isHigh;
