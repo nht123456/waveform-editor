@@ -238,40 +238,50 @@ export class StorageManager {
   }
 
   /**
-   * 将导入的项目数据写入 localStorage
+   * 将导入的项目数据追加为新 sheet（不影响现有数据）
    * @param {{registry: Object, sheets: Object}} projectData
+   * @returns {string} 第一个导入的 sheetId，用于切换
    */
   loadImportedProject(projectData) {
-    // 清除现有数据
-    const oldRegistry = this.loadRegistry();
-    for (const sheet of oldRegistry.sheets) {
-      this.deleteSheetData(sheet.id);
+    const currentRegistry = this.loadRegistry();
+    let firstImportedSheetId = null;
+
+    // 为导入的每个 sheet 生成新 ID，避免与现有 sheet 冲突
+    for (const importedSheet of projectData.registry.sheets) {
+      const oldId = importedSheet.id;
+      const newId = 'sheet_' + Math.random().toString(36).substr(2, 9);
+      const sheetData = projectData.sheets[oldId];
+
+      if (sheetData) {
+        this.saveSheet(newId, sheetData);
+        currentRegistry.sheets.push({ id: newId, name: importedSheet.name });
+        if (!firstImportedSheetId) firstImportedSheetId = newId;
+      }
     }
 
-    // 写入新数据
-    const registry = projectData.registry;
-    for (const [sheetId, sheetData] of Object.entries(projectData.sheets)) {
-      this.saveSheet(sheetId, sheetData);
+    // 切换到第一个导入的 sheet
+    if (firstImportedSheetId) {
+      currentRegistry.activeSheetId = firstImportedSheetId;
     }
-    this.saveRegistry(registry);
+    this.saveRegistry(currentRegistry);
+    return firstImportedSheetId;
   }
 
   /**
-   * 将旧版单项目数据写入 localStorage
+   * 将旧版单项目数据追加为新 sheet
    * @param {Object} projectData
+   * @returns {string} 导入的 sheetId
    */
   loadLegacyProject(projectData) {
-    // 清除现有数据
-    const oldRegistry = this.loadRegistry();
-    for (const sheet of oldRegistry.sheets) {
-      this.deleteSheetData(sheet.id);
-    }
-
-    const sheetId = projectData.id || ('sheet_' + Math.random().toString(36).substr(2, 9));
+    const currentRegistry = this.loadRegistry();
+    const newId = 'sheet_' + Math.random().toString(36).substr(2, 9);
     const name = projectData.name || 'waveform_1';
 
-    this.saveSheet(sheetId, projectData);
-    this.saveRegistry({ sheets: [{ id: sheetId, name }], activeSheetId: sheetId });
+    this.saveSheet(newId, projectData);
+    currentRegistry.sheets.push({ id: newId, name });
+    currentRegistry.activeSheetId = newId;
+    this.saveRegistry(currentRegistry);
+    return newId;
   }
 
   // ===== 旧接口兼容（不再使用） =====

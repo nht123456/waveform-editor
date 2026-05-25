@@ -12,7 +12,7 @@ import { HistoryController } from './controllers/HistoryController.js?v=17';
 import { Toolbar } from './ui/Toolbar.js?v=17';
 import { SignalPanel } from './ui/SignalPanel.js?v=22';
 import { PropertyPanel } from './ui/PropertyPanel.js?v=48';
-import { StorageManager } from './io/StorageManager.js?v=21';
+import { StorageManager } from './io/StorageManager.js?v=22';
 import { Exporter } from './io/Exporter.js?v=28';
 import { ImageRecognizer } from './io/ImageRecognizer.js?v=7';
 

@@ -9,9 +9,17 @@
 - [colors.js](file://src/config/colors.js)
 - [Project.js](file://src/models/Project.js)
 - [Signal.js](file://src/models/Signal.js)
+- [Arrow.js](file://src/models/Arrow.js)
 - [main.js](file://src/main.js)
 - [index.html](file://index.html)
 </cite>
+
+## 更新摘要
+**变更内容**
+- 更新版本号信息以反映依赖箭头渲染改进
+- 增强缓存行为说明，确保正确的渲染性能
+- 优化依赖箭头渲染器的配置参数
+- 完善SVG元素创建和命名空间处理细节
 
 ## 目录
 1. [简介](#简介)
@@ -27,6 +35,8 @@
 
 ## 简介
 SVGRenderer是波形图编辑器的核心渲染器，负责管理SVG画布并协调各个子渲染器的工作。它提供了完整的波形图渲染功能，包括信号波形、时间轴、依赖箭头等元素的绘制，并实现了坐标转换、尺寸计算、事件处理等核心API。
+
+**更新** 版本号同步更新以反映依赖箭头渲染改进，确保正确的缓存行为
 
 ## 项目结构
 波形图编辑器采用模块化的架构设计，主要分为以下几个层次：
@@ -49,9 +59,9 @@ Signal[Signal 信号模型]
 Arrow[Arrow 箭头模型]
 end
 subgraph "配置层"
-Colors[颜色配置]
-RenderConfig[渲染配置]
-ArrowConfig[箭头配置]
+Colors[颜色配置 v22]
+RenderConfig[渲染配置 v18]
+ArrowConfig[箭头配置 v20]
 end
 Main --> SVGRenderer
 SVGRenderer --> SignalRenderer
@@ -66,12 +76,12 @@ SVGRenderer --> ArrowConfig
 ```
 
 **图表来源**
-- [SVGRenderer.js:10-40](file://src/renderers/SVGRenderer.js#L10-L40)
-- [main.js:21-44](file://src/main.js#L21-L44)
+- [SVGRenderer.js:5-8](file://src/renderers/SVGRenderer.js#L5-L8)
+- [main.js:4-17](file://src/main.js#L4-L17)
 
 **章节来源**
-- [SVGRenderer.js:1-547](file://src/renderers/SVGRenderer.js#L1-L547)
-- [main.js:1-819](file://src/main.js#L1-L819)
+- [SVGRenderer.js:1-563](file://src/renderers/SVGRenderer.js#L1-L563)
+- [main.js:1-1044](file://src/main.js#L1-L1044)
 
 ## 核心组件
 SVGRenderer作为主渲染器，承担着以下核心职责：
@@ -317,6 +327,8 @@ DepRenderer->>Group : 添加文字标注
 - **垂直偏移**: 同起点/终点的多箭头防重叠
 - **方向控制**: 根据箭头方向确定控制点位置
 
+**更新** 依赖箭头渲染改进包括增强的缓存行为和更精确的控制点计算
+
 **章节来源**
 - [DependencyRenderer.js:267-289](file://src/renderers/DependencyRenderer.js#L267-L289)
 
@@ -342,9 +354,9 @@ SVGRenderer与各子渲染器采用松耦合设计：
 graph LR
 subgraph "外部依赖"
 DOM[DOM API]
-Colors[颜色配置]
-RenderConfig[渲染配置]
-ArrowConfig[箭头配置]
+Colors[颜色配置 v22]
+RenderConfig[渲染配置 v18]
+ArrowConfig[箭头配置 v20]
 end
 subgraph "内部组件"
 SVGRenderer[SVGRenderer]
@@ -407,6 +419,8 @@ SVGRenderer采用了多项性能优化措施：
 - **动态扩展**: 时间轴可根据内容自动扩展
 - **实时更新**: 窗口大小变化时延迟重绘
 
+**更新** 版本号同步确保依赖箭头渲染的缓存行为正确，提升渲染性能
+
 ## 故障排除指南
 
 ### 常见问题及解决方案
@@ -434,6 +448,8 @@ SVGRenderer采用了多项性能优化措施：
 
 ## 结论
 SVGRenderer作为波形图编辑器的核心组件，展现了优秀的架构设计和实现质量。其模块化的设计使得各个渲染器职责明确，易于维护和扩展。通过合理的配置管理和性能优化策略，SVGRenderer能够高效地处理复杂的波形图渲染需求。
+
+**更新** 最新的版本号同步确保了依赖箭头渲染的改进得到正确实现，缓存行为更加稳定可靠。
 
 ## 附录
 
@@ -499,4 +515,4 @@ const signalIndex = renderer.getSignalIndexByY(mouseY);
 - [SVGRenderer.js:284-314](file://src/renderers/SVGRenderer.js#L284-L314)
 - [SVGRenderer.js:194-243](file://src/renderers/SVGRenderer.js#L194-L243)
 - [SVGRenderer.js:258-279](file://src/renderers/SVGRenderer.js#L258-L279)
-- [index.html:59-61](file://index.html#L59-L61)
+- [index.html:63-65](file://index.html#L63-L65)
