@@ -13,7 +13,7 @@ import { Toolbar } from './ui/Toolbar.js?v=17';
 import { SignalPanel } from './ui/SignalPanel.js?v=22';
 import { PropertyPanel } from './ui/PropertyPanel.js?v=48';
 import { StorageManager } from './io/StorageManager.js?v=22';
-import { Exporter } from './io/Exporter.js?v=28';
+import { Exporter } from './io/Exporter.js?v=30';
 import { ImageRecognizer } from './io/ImageRecognizer.js?v=7';
 
 /**
@@ -53,35 +53,65 @@ class WaveformEditor {
     // 迁移旧数据
     this.storageManager.migrateOldData();
 
-    // 加载 sheet 注册表
-    const registry = this.storageManager.loadRegistry();
-
-    // 如果没有任何 sheet，创建默认 sheet
-    if (registry.sheets.length === 0) {
-      const defaultProject = await this._createDefaultProject();
-      const sheetId = defaultProject.id;
-      const sheetName = 'waveform_1';
-      this.storageManager.saveSheet(sheetId, defaultProject.toJSON());
-      this.storageManager.addSheetToRegistry(sheetId, sheetName);
-      this.storageManager.setActiveSheet(sheetId);
-      this.project = defaultProject;
+    // 独立版模式：如果有嵌入的模板数据，始终优先使用（忽略 localStorage）
+    console.log('[init] __WAVEFORM_TEMPLATE__ 存在:', !!window.__WAVEFORM_TEMPLATE__);
+    if (window.__WAVEFORM_TEMPLATE__) {
+      console.log('[独立版] 使用嵌入模板数据');
+      const template = window.__WAVEFORM_TEMPLATE__;
+      // 诊断：检查模板中箭头的曲率
+      if (template.arrows) {
+        template.arrows.forEach((a, i) => {
+          console.log(`[独立版] 模板箭头[${i}] id=${a.id} curvature=${a.curvature} curveType=${a.curveType}`);
+        });
+      }
+      const project = Project.fromJSON(template);
+      // 诊断：检查 fromJSON 后箭头的曲率
+      project.arrows.forEach((a, i) => {
+        console.log(`[独立版] 加载后箭头[${i}] id=${a.id} curvature=${a.curvature} curveType=${a.curveType}`);
+      });
+      project.name = template.name || 'waveform_1';
+      project.id = 'proj_' + Math.random().toString(36).substr(2, 9);
+      this.project = project;
+      const sheetId = project.id;
       this.activeSheetId = sheetId;
+      // 尝试写入 localStorage（file:// 下可能失败，不影响正常使用）
+      try {
+        this.storageManager.saveSheet(sheetId, project.toJSON());
+        this.storageManager.saveRegistry({ sheets: [{ id: sheetId, name: project.name }], activeSheetId: sheetId });
+      } catch (e) {
+        console.warn('[独立版] localStorage 不可用（file:// 协议限制）, 不影响正常浏览');
+      }
     } else {
-      // 加载活跃 sheet
-      this.activeSheetId = registry.activeSheetId || registry.sheets[0].id;
-      const sheetData = this.storageManager.loadSheet(this.activeSheetId);
-      if (sheetData) {
-        try {
-          this.project = Project.fromJSON(sheetData);
-          this._migrateProject(this.project);
-        } catch (e) {
-          console.error('加载 sheet 数据失败，创建新项目:', e);
+      // 正常模式：加载 sheet 注册表
+      const registry = this.storageManager.loadRegistry();
+
+      // 如果没有任何 sheet，创建默认 sheet
+      if (registry.sheets.length === 0) {
+        const defaultProject = await this._createDefaultProject();
+        const sheetId = defaultProject.id;
+        const sheetName = 'waveform_1';
+        this.storageManager.saveSheet(sheetId, defaultProject.toJSON());
+        this.storageManager.addSheetToRegistry(sheetId, sheetName);
+        this.storageManager.setActiveSheet(sheetId);
+        this.project = defaultProject;
+        this.activeSheetId = sheetId;
+      } else {
+        // 加载活跃 sheet
+        this.activeSheetId = registry.activeSheetId || registry.sheets[0].id;
+        const sheetData = this.storageManager.loadSheet(this.activeSheetId);
+        if (sheetData) {
+          try {
+            this.project = Project.fromJSON(sheetData);
+            this._migrateProject(this.project);
+          } catch (e) {
+            console.error('加载 sheet 数据失败，创建新项目:', e);
+            this.project = await this._createDefaultProject();
+            this.storageManager.saveSheet(this.activeSheetId, this.project.toJSON());
+          }
+        } else {
           this.project = await this._createDefaultProject();
           this.storageManager.saveSheet(this.activeSheetId, this.project.toJSON());
         }
-      } else {
-        this.project = await this._createDefaultProject();
-        this.storageManager.saveSheet(this.activeSheetId, this.project.toJSON());
       }
     }
 

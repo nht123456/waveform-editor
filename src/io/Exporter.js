@@ -198,12 +198,18 @@ export class Exporter {
    * 从源文件构建，所有 JS/CSS 内联，无需服务器即可在 file:// 下运行
    */
   async exportStandaloneHTML() {
+    // 诊断：导出时检查箭头曲率
+    this.project.arrows.forEach((a, i) => {
+      console.log(`[导出独立版] 箭头[${i}] id=${a.id} curvature=${a.curvature} curveType=${a.curveType} from=${a.fromSignalId} to=${a.toSignalId}`);
+    });
     const templateJSON = JSON.stringify(this.project.toJSON());
+    console.log(`[导出独立版] 嵌入项目: ${this.project.signals.length}信号, ${this.project.arrows.length}箭头, JSON大小=${templateJSON.length}字符`);
 
     // 从源文件获取 index.html（不使用 outerHTML，避免捕获渲染后的 DOM）
+    const _ts = '?t=' + Date.now();
     let html;
     try {
-      const htmlResp = await fetch('index.html');
+      const htmlResp = await fetch('index.html' + _ts);
       html = await htmlResp.text();
     } catch (e) {
       console.error('无法加载 index.html:', e);
@@ -214,7 +220,7 @@ export class Exporter {
     // 获取 CSS
     let css = '';
     try {
-      const cssResp = await fetch('styles/main.css');
+      const cssResp = await fetch('styles/main.css' + _ts);
       css = await cssResp.text();
     } catch (e) {
       console.error('无法加载 CSS:', e);
@@ -238,13 +244,14 @@ export class Exporter {
       'src/ui/PropertyPanel.js',
       'src/io/StorageManager.js',
       'src/io/Exporter.js',
+      'src/io/ImageRecognizer.js',
       'src/main.js',
     ];
 
     const jsParts = [];
     for (const path of modulePaths) {
       try {
-        const resp = await fetch(path);
+        const resp = await fetch(path + _ts);
         let code = await resp.text();
         // 移除 import 行
         code = code.replace(/^import\s+.*?;?\s*$/gm, '');
@@ -280,10 +287,11 @@ export class Exporter {
     // 移除 HTML 中残留的 ?v= 缓存版本号
     html = html.replace(/\?v=\d+/g, '');
 
-    // 在 <head> 后插入模板变量（只替换第一个，避免替换 JS 代码中的 <head> 字符串）
+    // 在 <head> 后插入模板变量（转义 </script> 防止 HTML 解析器误判）
+    const safeTemplateJSON = templateJSON.replace(/<\/script>/gi, '<\\/script>');
     html = html.replace(
       '<head>',
-      '<head><script>window.__WAVEFORM_TEMPLATE__ = ' + templateJSON + ';</script>'
+      '<head><script>window.__WAVEFORM_TEMPLATE__ = ' + safeTemplateJSON + ';<\/script>'
     );
 
     // html 已包含 DOCTYPE，无需额外添加
