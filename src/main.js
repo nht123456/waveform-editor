@@ -5,15 +5,16 @@ import { COLORS, RENDER_CONFIG } from './config/colors.js?v=21';
 import { Project } from './models/Project.js?v=20';
 import { Signal } from './models/Signal.js?v=23';
 import { SVGRenderer } from './renderers/SVGRenderer.js?v=44';
-import { SignalRenderer } from './renderers/SignalRenderer.js?v=63';
+import { SignalRenderer } from './renderers/SignalRenderer.js?v=64';
 import { TimeAxisRenderer } from './renderers/TimeAxisRenderer.js?v=18';
-import { InteractionController } from './controllers/InteractionController.js?v=73';
+import { InteractionController } from './controllers/InteractionController.js?v=74';
 import { HistoryController } from './controllers/HistoryController.js?v=17';
 import { Toolbar } from './ui/Toolbar.js?v=17';
 import { SignalPanel } from './ui/SignalPanel.js?v=22';
 import { PropertyPanel } from './ui/PropertyPanel.js?v=48';
-import { StorageManager } from './io/StorageManager.js?v=20';
+import { StorageManager } from './io/StorageManager.js?v=21';
 import { Exporter } from './io/Exporter.js?v=28';
+import { ImageRecognizer } from './io/ImageRecognizer.js?v=7';
 
 /**
  * 波形图编辑器主类
@@ -512,7 +513,14 @@ class WaveformEditor {
 
     // 保存项目
     document.getElementById('saveProjectBtn').addEventListener('click', () => {
-      this.storageManager.saveSheet(this.activeSheetId, this.project.toJSON());
+      const _gc = this.project.signals.reduce((s, sig) => s + (sig.gaps?.length || 0), 0);
+      const _mc = this.project.signals.reduce((s, sig) => s + (sig.edgeMarkers?.length || 0), 0);
+      console.log(`[Export] 内存: ${this.project.signals.length}信号, ${_gc}分隔符, ${_mc}沿标注`);
+      const _json = this.project.toJSON();
+      const _jg = (_json.signals||[]).reduce((s, sig) => s + (sig.gaps?.length||0), 0);
+      const _jm = (_json.signals||[]).reduce((s, sig) => s + (sig.edgeMarkers?.length||0), 0);
+      console.log(`[Export] toJSON: ${_json.signals?.length}信号, ${_jg}分隔符, ${_jm}沿标注`);
+      this.storageManager.saveSheet(this.activeSheetId, _json);
       this.storageManager.exportProject(this.project.name + '.wfp');
     });
 
@@ -630,6 +638,9 @@ class WaveformEditor {
 
     // 快捷键提示条与帮助弹窗
     this._initHelpUI();
+
+    // 图片识别按钮
+    this._initImageImport();
   }
 
   /**
@@ -643,6 +654,8 @@ class WaveformEditor {
     // OS 适配提示文本
     const altKeyHint = document.getElementById('altKeyHint');
     if (altKeyHint) altKeyHint.textContent = altKeyName;
+    const pasteKeyHint = document.getElementById('pasteKeyHint');
+    if (pasteKeyHint) pasteKeyHint.textContent = isMac ? '⌘+V' : 'Ctrl+V';
     document.querySelectorAll('.help-table kbd.alt-key').forEach(el => {
       el.textContent = altKeyName;
     });
@@ -654,13 +667,13 @@ class WaveformEditor {
     const hintBar = document.getElementById('hintBar');
     const hintCloseBtn = document.getElementById('hintCloseBtn');
     if (hintBar) {
-      const dismissed = localStorage.getItem('waveform-hint-dismissed') === '1';
+      const dismissed = localStorage.getItem('waveform-hint-dismissed-v2') === '1';
       if (!dismissed) hintBar.style.display = 'flex';
     }
     if (hintCloseBtn) {
       hintCloseBtn.addEventListener('click', () => {
         hintBar.style.display = 'none';
-        localStorage.setItem('waveform-hint-dismissed', '1');
+        localStorage.setItem('waveform-hint-dismissed-v2', '1');
       });
     }
 
@@ -684,6 +697,119 @@ class WaveformEditor {
         closeHelp();
       }
     });
+  }
+
+  /**
+   * 初始化图片识别导入功能
+   */
+  _initImageImport() {
+    const importBtn = document.getElementById('importImageBtn');
+    if (importBtn) {
+      importBtn.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.addEventListener('change', async () => {
+          if (!input.files[0]) return;
+          await this._processWaveformImage(input.files[0]);
+        });
+        input.click();
+      });
+    }
+
+    // 支持粘贴图片（Ctrl+V / Cmd+V）
+    document.addEventListener('paste', async (e) => {
+      // 如果焦点在输入框内，不拦截
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea') return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            await this._processWaveformImage(file);
+          }
+          return;
+        }
+      }
+    });
+  }
+
+  /**
+   * 处理上传的波形图片
+   */
+  async _processWaveformImage(file) {
+    const btn = document.getElementById('importImageBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+
+    try {
+      const recognizer = new ImageRecognizer();
+      const endTime = this.project.timeAxis.end;
+      const results = await recognizer.recognize(file, endTime, {
+        recognizeNames: true,
+        onProgress: (msg) => { btn.textContent = msg; }
+      });
+
+      if (results.length === 0) {
+        alert('未能识别出波形信号，请确保图片是清晰的数字波形图');
+        return;
+      }
+
+      // 确认导入
+      const namePreview = results.map(s => s.name).join(', ');
+      const hasExisting = this.project.signals.length > 0;
+      const confirmed = confirm(
+        `识别到 ${results.length} 个信号：${namePreview}\n` +
+        `每个信号包含 ${results.map(s => s.segments.length).join('/')} 个电平段\n\n` +
+        (hasExisting
+          ? `是否用识别结果替换当前所有波形？\n（现有 ${this.project.signals.length} 个信号将被清除）`
+          : `是否将识别结果添加到当前波形图？`)
+      );
+
+      if (!confirmed) return;
+
+      // 清除现有信号
+      if (hasExisting) {
+        const existingIds = this.project.signals.map(s => s.id);
+        for (const id of existingIds) {
+          this.project.removeSignal(id);
+        }
+        this.selectedSignalId = null;
+      }
+
+      // 添加识别出的信号
+      for (const result of results) {
+        const signal = new Signal({
+          name: result.name,
+          type: result.type,
+          color: '#000000',
+          segments: result.segments
+        });
+        // 时钟信号：设置 clockConfig 并重生成段
+        if (result.type === 'clock' && result.clockConfig) {
+          signal.clockConfig = result.clockConfig;
+          signal.generateClockSegments(this.project.timeAxis.end);
+        }
+        this.project.addSignal(signal);
+      }
+
+      this.signalPanel.render();
+      this.render();
+      this.storageManager.saveSheet(this.activeSheetId, this.project.toJSON());
+
+      alert(`成功导入 ${results.length} 个信号！\n\n提示：识别结果可能不完美，请手动微调。`);
+    } catch (e) {
+      console.error('图片识别失败:', e);
+      alert('识别失败: ' + e.message);
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
   }
 
   /**
@@ -822,6 +948,11 @@ class WaveformEditor {
       const sheetData = this.storageManager.loadSheet(this.activeSheetId);
 
       if (sheetData) {
+        // debug: 检查导入数据中的分隔符和沿标注
+        const gapCount = (sheetData.signals || []).reduce((sum, s) => sum + (s.gaps?.length || 0), 0);
+        const markerCount = (sheetData.signals || []).reduce((sum, s) => sum + (s.edgeMarkers?.length || 0), 0);
+        console.log(`[Import] 加载项目: ${sheetData.signals?.length || 0} 信号, ${gapCount} 分隔符, ${markerCount} 沿标注`);
+
         const newProject = Project.fromJSON(sheetData);
         this._migrateProject(newProject);
         this._setProject(newProject);

@@ -3,9 +3,9 @@
  * 负责管理 SVG 画布和协调各子渲染器
  */
 import { COLORS, RENDER_CONFIG, ARROW_CONFIG } from '../config/colors.js?v=22';
-import { SignalRenderer } from './SignalRenderer.js?v=56';
+import { SignalRenderer } from './SignalRenderer.js?v=57';
 import { TimeAxisRenderer } from './TimeAxisRenderer.js?v=19';
-import { DependencyRenderer } from './DependencyRenderer.js?v=26';
+import { DependencyRenderer } from './DependencyRenderer.js?v=27';
 
 export class SVGRenderer {
   /**

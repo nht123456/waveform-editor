@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>波形图编辑器</title>
-  <link rel="stylesheet" href="styles/main.css?v=10">
+  <link rel="stylesheet" href="styles/main.css?v=11">
 </head>
 <body>
   <div class="app-container">
@@ -37,6 +37,7 @@
         <button class="toolbar-btn" id="saveTemplateBtn" title="保存当前波形为模板，新建时自动使用">存为模板</button>
         <button class="toolbar-btn" id="resetTemplateBtn" title="恢复默认模板">重置模板</button>
         <button class="toolbar-btn" id="exportStandaloneBtn" title="导出含当前波形的独立HTML，发给别人可直接使用">导出独立版</button>
+        <button class="toolbar-btn" id="importImageBtn" title="上传波形图片，自动识别并转换为可编辑波形">🖼️ 识别图片</button>
       </div>
       <div class="toolbar-group" style="margin-left: auto;">
         <button class="toolbar-btn icon-btn" id="helpBtn" title="快捷键说明">?</button>
@@ -65,7 +66,10 @@
           <!-- 快捷键提示条 -->
           <div class="hint-bar" id="hintBar" style="display:none;">
             <span class="hint-icon">💡</span>
-            <span class="hint-text">按住 <kbd id="altKeyHint">Alt</kbd> + 拖拽 = 添加依赖箭头</span>
+            <div class="hint-content">
+              <div>按住 <kbd id="altKeyHint">Alt</kbd> + 拖拽 = 添加依赖箭头</div>
+              <div><kbd id="pasteKeyHint">Ctrl+V</kbd> 粘贴图片 = 识别波形（黑白无水印图片识别效果最佳）</div>
+            </div>
             <button class="hint-close" id="hintCloseBtn" title="不再显示">×</button>
           </div>
         </div>
@@ -105,6 +109,9 @@
             <tr><td><kbd class="mod-key">Ctrl</kbd> + <kbd>Z</kbd></td><td>撤销</td></tr>
             <tr><td><kbd class="mod-key">Ctrl</kbd> + <kbd>Y</kbd></td><td>重做</td></tr>
             <tr><td><kbd>Delete</kbd></td><td>删除选中项（信号/箭头/分隔符）</td></tr>
+            <tr><th colspan="2">图片识别</th></tr>
+            <tr><td><kbd class="mod-key">Ctrl</kbd> + <kbd>V</kbd></td><td>粘贴图片 = 识别波形（黑白无水印图片识别效果最佳）</td></tr>
+            <tr><td>点击<kbd>🖼️ 识别图片</kbd></td><td>从本地选择波形图</td></tr>
           </table>
           <p class="help-tip">💡 Mac 用户：<kbd>Alt</kbd> = <kbd>Option (⌥)</kbd>，<kbd>Ctrl</kbd> = <kbd>Cmd (⌘)</kbd></p>
         </div>
@@ -120,6 +127,6 @@
     </div>
   </div>
 
-  <script type="module" src="src/main.js?v=269"></script>
+  <script type="module" src="src/main.js?v=282"></script>
 </body>
 </html>

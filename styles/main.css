@@ -249,6 +249,14 @@ body {
   user-select: none;
 }
 
+.hint-bar .hint-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  user-select: none;
+  line-height: 1.5;
+}
+
 .hint-bar kbd {
   display: inline-block;
   padding: 1px 6px;

@@ -184,6 +184,8 @@ export class StorageManager {
     for (const sheet of registry.sheets) {
       const data = this.loadSheet(sheet.id);
       if (data) {
+        const sg = (data.signals || []).reduce((sum, s) => sum + (s.gaps?.length || 0), 0);
+        console.log(`[Export] sheet=${sheet.id}: ${data.signals?.length}信号, ${sg}分隔符`);
         projectData.sheets[sheet.id] = data;
       }
     }

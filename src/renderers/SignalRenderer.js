@@ -24,6 +24,8 @@ export class SignalRenderer {
 
     // 清理上一次渲染的 bus X 态 clipPath
     this.renderer.defs.querySelectorAll('[id^="bus-x-clip-"]').forEach(el => el.remove());
+    // 清理上一次渲染的分隔符 mask（避免项目切换后残留旧 mask 干扰）
+    this.renderer.defs.querySelectorAll('[id^="gap-mask-"]').forEach(el => el.remove());
 
     this.project.signals.forEach((signal, index) => {
       this.renderSignal(group, signal, index);
