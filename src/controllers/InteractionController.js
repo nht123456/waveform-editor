@@ -716,11 +716,11 @@ export class InteractionController {
     const direction = toX >= fromX ? 1 : -1;
     let cp1, cp2;
 
-    // 同信号箭头：向上拱起弧线，cp2 接近终点使末端切线平缓
+    // 同信号箭头：对称圆弧，两控制点等高
     if (Math.abs(toY - fromY) < 5) {
-      const arcHeight = Math.max(35, Math.min(dx * 0.35, 80));
-      cp1 = { x: fromX + dx * 0.3 * direction, y: fromY - arcHeight };
-      cp2 = { x: toX - dx * 0.25 * direction, y: toY - arcHeight * 0.15 };
+      const arcHeight = Math.max(30, dx * 0.4);
+      cp1 = { x: fromX + dx * 0.25 * direction, y: fromY - arcHeight };
+      cp2 = { x: toX - dx * 0.25 * direction, y: toY - arcHeight };
     } else {
       const controlOffset = Math.min(dx * 0.5, 150);
       cp1 = { x: fromX + controlOffset * direction, y: fromY };

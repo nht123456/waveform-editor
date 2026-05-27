@@ -286,13 +286,12 @@ export class DependencyRenderer {
       };
     }
 
-    // 同信号箭头（startY ≈ endY）：向上拱起弧线，曲率缩放 arcHeight
-    // cp2 的 y 接近终点，使末端切线接近水平——箭头方向与曲线流向一致
+    // 同信号箭头（startY ≈ endY）：对称圆弧，两控制点等高
     if (Math.abs(y2 - y1) < 5) {
-      const arcHeight = Math.max(35, Math.min(dx * 0.35, 80)) * curvature;
+      const arcHeight = Math.max(30, dx * 0.4) * curvature;
       return {
-        cp1: { x: x1 + dx * 0.3 * direction, y: y1 - arcHeight },
-        cp2: { x: x2 - dx * 0.25 * direction, y: y2 - arcHeight * 0.15 }
+        cp1: { x: x1 + dx * 0.25 * direction, y: y1 - arcHeight },
+        cp2: { x: x2 - dx * 0.25 * direction, y: y2 - arcHeight }
       };
     }
 
