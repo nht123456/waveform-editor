@@ -4,7 +4,7 @@
 import { COLORS, RENDER_CONFIG } from './config/colors.js?v=21';
 import { Project } from './models/Project.js?v=20';
 import { Signal } from './models/Signal.js?v=23';
-import { SVGRenderer } from './renderers/SVGRenderer.js?v=44';
+import { SVGRenderer } from './renderers/SVGRenderer.js?v=45';
 import { SignalRenderer } from './renderers/SignalRenderer.js?v=64';
 import { TimeAxisRenderer } from './renderers/TimeAxisRenderer.js?v=18';
 import { InteractionController } from './controllers/InteractionController.js?v=74';
